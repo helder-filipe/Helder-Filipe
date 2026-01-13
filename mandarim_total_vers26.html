@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <!-- Configurações para Web App (PWA) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#58cc02">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/2090/2090259.png">
+
+    <title>Mandarim Total - Pro</title>
+    <style>
+        :root {
+            --duo-green: #58cc02; --duo-gray: #e5e5e5; --duo-text: #3c3c3c;
+            --duo-red: #ff4b4b; --duo-blue: #1cb0f6; --duo-yellow: #ffc800;
+            --duo-purple: #9b59b6; --duo-orange: #ff9600; --duo-teal: #2bcbba; --duo-pink: #fd79a8;
+            --bg-wrong: #ffe0e0;
+        }
+        body { font-family: 'Segoe UI', sans-serif; color: var(--duo-text); display: flex; flex-direction: column; height: 100vh; max-width: 900px; margin: 0 auto; background: #fff; overflow: hidden; user-select: none; touch-action: manipulation; }
+        
+        /* HEADER */
+        header { padding: 10px 20px; border-bottom: 2px solid var(--duo-gray); position: relative; background: white; z-index: 10; flex-shrink: 0; padding-top: env(safe-area-inset-top); }
+        .top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .stats-container { display: flex; gap: 15px; font-weight: bold; font-size: 1.1rem; }
+        .xp-display { color: var(--duo-yellow); text-shadow: 1px 1px 0 #dceba6; } 
+        .streak-display { color: var(--duo-red); }
+        .timer-container { width: 100%; height: 8px; background: var(--duo-gray); border-radius: 4px; overflow: hidden; display: none; }
+        .timer-bar { height: 100%; background: var(--duo-blue); width: 100%; transition: width 1s linear; }
+        .timer-bar.critical { background: var(--duo-red); }
+
+        /* MAIN & SCROLL */
+        main { 
+            flex-grow: 1; padding: 10px; 
+            display: flex; flex-direction: column; 
+            width: 100%; box-sizing: border-box; 
+            overflow-y: auto; overflow-x: hidden;
+            position: relative; height: 100%; 
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* --- GAME: MATCH PAIRS --- */
+        .game-board { display: flex; gap: 15px; width: 100%; height: 100%; }
+        .column { flex: 1; display: flex; flex-direction: column; gap: 8px; height: 100%; }
+        .column-title { text-align: center; font-weight: bold; color: #888; margin-bottom: 2px; text-transform: uppercase; font-size: 0.8rem; flex-shrink: 0; }
+        .card { 
+            border: 2px solid var(--duo-gray); border-radius: 12px; background: white; 
+            min-height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            cursor: pointer; box-shadow: 0 3px 0 var(--duo-gray); text-align: center; 
+            user-select: none; transition: transform 0.1s, background 0.2s; position: relative;
+            touch-action: manipulation;
+        }
+        .card:active { transform: translateY(3px); box-shadow: none; }
+        .card.selected { border-color: var(--duo-blue); background-color: #ddf4ff; transform: translateY(3px); box-shadow: none; }
+        .card.matched { opacity: 0; pointer-events: none; transition: opacity 0.5s; }
+        .card.wrong { border-color: var(--duo-red); background-color: var(--duo-red); color: white; animation: shake 0.4s; }
+        .card.wrong .txt-py, .card.wrong .txt-zh { color: white; }
+
+        .hard-mode .game-board { overflow: hidden; }
+        .hard-mode .column { gap: 4px; }
+        .hard-mode .card { min-height: 0; flex: 1; padding: 0; border-radius: 8px; }
+        .hard-mode .txt-py { display: none; }
+        .hard-mode .txt-zh { font-size: 1.3rem; line-height: 1; }
+        .hard-mode .txt-pt { font-size: 0.85rem; line-height: 1; padding: 0 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+
+        /* --- GAME: QUIZ --- */
+        .quiz-container { max-width: 600px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 20px; animation: slideIn 0.3s ease-out; }
+        .quiz-question { font-size: 1.4rem; text-align: center; font-weight: bold; padding: 30px; background: #f7f7f7; border: 2px solid var(--duo-gray); border-radius: 16px; color: var(--duo-text); }
+        .quiz-options { display: flex; flex-direction: column; gap: 12px; }
+        .quiz-btn { 
+            padding: 18px; font-size: 1.1rem; border: 2px solid var(--duo-gray); border-radius: 12px; background: white; 
+            cursor: pointer; text-align: left; box-shadow: 0 4px 0 var(--duo-gray); transition: 0.1s; display: flex; justify-content: space-between;
+        }
+        .quiz-btn:active { transform: translateY(4px); box-shadow: none; }
+        .quiz-btn:hover { background-color: #fcfcfc; border-color: var(--duo-blue); }
+        .quiz-btn.correct { background: #d7ffb8 !important; border-color: #58cc02 !important; color: #2a6600; pointer-events: none; }
+        .quiz-btn.wrong { background: #ffdfe0 !important; border-color: #ff4b4b !important; color: #a30000; pointer-events: none; }
+
+        /* --- GAME: SENTENCE ASSEMBLE --- */
+        .assemble-container { width: 100%; max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+        .assemble-prompt { font-size: 1.3rem; text-align: center; margin-bottom: 10px; color: #555; }
+        .assemble-area { 
+            min-height: 90px; border-bottom: 2px solid var(--duo-gray); border-top: 2px solid var(--duo-gray);
+            display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 10px; justify-content: center;
+            background: #fdfdfd; margin-bottom: 20px;
+        }
+        .word-bank { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 10px; }
+        .word-chip, .word-chip-placed {
+            background: white; border: 2px solid var(--duo-gray); border-radius: 12px; padding: 10px 15px; 
+            cursor: pointer; box-shadow: 0 4px 0 var(--duo-gray); user-select: none; transition: transform 0.1s;
+            display: flex; flex-direction: column; align-items: center; min-width: 40px; 
+        }
+        .chip-py { font-size: 0.75rem; color: #888; margin-bottom: 2px; font-weight: normal; }
+        .chip-zh { font-size: 1.2rem; font-weight: bold; line-height: 1; }
+        .word-chip:active { transform: translateY(4px); box-shadow: none; }
+        .word-chip.used { opacity: 0; pointer-events: none; }
+        .word-chip-placed { border-color: var(--duo-blue); box-shadow: 0 4px 0 #1480b3; color: var(--duo-blue); }
+        .word-chip-placed .chip-py { color: #6dbfe2; }
+
+        /* --- GAME: WRITE SENTENCE --- */
+        .write-container { width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; text-align: center; }
+        .write-input { width: 90%; padding: 15px; font-size: 1.2rem; border: 2px solid var(--duo-gray); border-radius: 12px; outline: none; background: #f9f9f9; resize: none; height: 80px; margin: 0 auto; }
+        .write-input:focus { border-color: var(--duo-blue); background: white; }
+        .pinyin-keyboard { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 10px 0; max-width: 100%; }
+        .pinyin-key { background: #fff; border: 1px solid var(--duo-gray); border-radius: 8px; padding: 10px 14px; font-size: 1.1rem; cursor: pointer; box-shadow: 0 3px 0 rgba(0,0,0,0.1); user-select: none; min-width: 40px; min-height: 40px; }
+        .pinyin-key:active { transform: translateY(2px); box-shadow: none; }
+        .pinyin-key:hover { border-color: var(--duo-blue); color: var(--duo-blue); }
+
+        /* --- GAME: SPEECH --- */
+        .speech-container { width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center; padding-top: 20px; }
+        .speech-target-zh { font-size: 3rem; font-weight: bold; margin-bottom: 5px; }
+        .speech-target-py { font-size: 1.5rem; color: #888; }
+        .speech-target-pt { font-size: 1.2rem; color: var(--duo-blue); font-weight: bold; margin-top: 10px; }
+        .mic-btn { width: 90px; height: 90px; border-radius: 50%; background: var(--duo-blue); border: none; color: white; font-size: 2.8rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: 0.2s; display: flex; align-items: center; justify-content: center; margin: 20px auto; user-select: none; -webkit-tap-highlight-color: transparent; }
+        .mic-btn:active { transform: scale(0.95); }
+        .mic-btn.listening { background: var(--duo-red); animation: pulse 1.5s infinite; pointer-events: none; }
+        @keyframes pulse { 0% {box-shadow: 0 0 0 0 rgba(255, 75, 75, 0.7);} 70% {box-shadow: 0 0 0 20px rgba(255, 75, 75, 0);} 100% {box-shadow: 0 0 0 0 rgba(255, 75, 75, 0);} }
+        .speech-feedback { font-size: 1.1rem; min-height: 30px; font-weight: bold; color: #666; padding: 0 20px;}
+        .speech-controls { display: flex; gap: 20px; margin-top: 20px; }
+
+        /* --- GAME: HANZI WRITING (CANVAS) --- */
+        .hanzi-container { width: 100%; max-width: 400px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .hanzi-prompt { text-align: center; margin-bottom: 5px; }
+        
+        .hanzi-canvas-wrapper { 
+            position: relative; width: 300px; height: 300px; 
+            border: 3px solid var(--duo-gray); border-radius: 12px; 
+            background-image: linear-gradient(var(--duo-gray) 1px, transparent 1px), linear-gradient(90deg, var(--duo-gray) 1px, transparent 1px); 
+            background-size: 150px 150px; background-position: center; 
+            overflow: hidden; 
+            /* Fix: garantir que não há ações de toque no wrapper */
+            touch-action: none; 
+            background-color: white;
+        }
+        
+        /* Layering Canvases */
+        #hanzi-bg-canvas { position: absolute; top:0; left:0; z-index: 1; pointer-events: none; }
+        
+        /* Fix: Pointer Events necessitam disto para não fazer scroll */
+        #hanzi-canvas { 
+            position: absolute; top:0; left:0; z-index: 2; 
+            cursor: crosshair; 
+            touch-action: none; 
+        }
+
+        .hanzi-controls { display: flex; gap: 10px; width: 300px; justify-content: space-between; }
+        .hanzi-tool-btn { padding: 8px 12px; border-radius: 8px; border: 2px solid var(--duo-gray); background: white; font-weight: bold; cursor: pointer; }
+        .hanzi-tool-btn:active { background: #eee; }
+        .hanzi-feedback { margin-top: 10px; font-weight: bold; height: 24px; }
+
+        /* --- FLASHCARDS --- */
+        .flashcard-container { perspective: 1000px; width: 320px; height: 450px; margin: 10px auto; }
+        .flashcard-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; border-radius: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .flashcard-inner.flipped { transform: rotateY(180deg); }
+        .fc-face { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 20px; border: 2px solid var(--duo-gray); background: white; padding: 20px; box-sizing: border-box; }
+        .fc-front { color: var(--duo-text); justify-content: space-between; padding-top: 40px; padding-bottom: 40px; }
+        .fc-zh-main { font-size: 3.5rem; font-weight: bold; margin-bottom: 5px; }
+        .fc-py-main { font-size: 1.5rem; color: #888; margin-bottom: 30px; }
+        .fc-input { width: 80%; padding: 12px; font-size: 1.1rem; border: 2px solid var(--duo-gray); border-radius: 10px; outline: none; text-align: center; background: #f9f9f9; }
+        .fc-input:focus { border-color: var(--duo-blue); background: white; }
+        .fc-buttons-row { display: flex; gap: 10px; justify-content: center; width: 90%; margin-top: 15px; }
+        .fc-check-btn { background: var(--duo-blue); color: white; border: none; padding: 12px 0; border-radius: 25px; font-size: 1rem; font-weight: bold; cursor: pointer; box-shadow: 0 3px 0 #1480b3; flex: 1; }
+        .fc-check-btn:active { transform: translateY(3px); box-shadow: none; }
+        .fc-giveup-btn { background: #95a5a6; color: white; border: none; padding: 12px 0; border-radius: 25px; font-size: 1rem; font-weight: bold; cursor: pointer; box-shadow: 0 3px 0 #7f8c8d; flex: 1; }
+        .fc-giveup-btn:active { transform: translateY(3px); box-shadow: none; }
+        .fc-back { transform: rotateY(180deg); background: #f0faff; justify-content: space-between; padding-top: 20px; padding-bottom: 30px; }
+        .fc-mini-header { background: white; border: 1px solid var(--duo-gray); border-radius: 10px; padding: 8px 15px; margin-bottom: 10px; display: flex; flex-direction: column; align-items: center; width: 80%; box-shadow: 0 2px 0 rgba(0,0,0,0.05); }
+        .fc-mini-zh { font-size: 1.5rem; font-weight: bold; color: #333; }
+        .fc-mini-py { font-size: 0.9rem; color: #888; }
+        .fc-result-area { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; width: 100%; gap: 15px; }
+        .fc-label { font-size: 0.8rem; text-transform: uppercase; color: #888; font-weight: bold; letter-spacing: 1px; }
+        .fc-correct-ans { font-size: 1.8rem; font-weight: bold; color: var(--duo-green); }
+        .fc-user-ans { font-size: 1.1rem; color: var(--duo-text); }
+        .fc-user-ans span { font-weight: bold; color: var(--duo-blue); }
+        .fc-controls { display: flex; gap: 15px; justify-content: center; width: 100%; }
+        .fc-btn { padding: 12px 20px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; font-size: 0.9rem; box-shadow: 0 3px 0 rgba(0,0,0,0.1); flex: 1; max-width: 120px; }
+        .fc-btn:active { transform: translateY(3px); box-shadow: none; }
+        .fc-know { background: var(--duo-green); color: white; }
+        .fc-dontknow { background: var(--duo-red); color: white; }
+
+        /* --- STATS & GUIDE --- */
+        .stat-section { margin-bottom: 20px; width: 100%; max-width: 600px; }
+        .stat-header { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .stat-list { display: flex; flex-direction: column; gap: 8px; }
+        .stat-item { display: flex; justify-content: space-between; padding: 10px; background: #f9f9f9; border-radius: 8px; border-left: 5px solid #ccc; }
+        .stat-item.strong { border-left-color: var(--duo-green); }
+        .stat-item.weak { border-left-color: var(--duo-red); }
+        .progress-bar-bg { width: 100px; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; margin-top: 5px; }
+        .progress-fill { height: 100%; background: #ccc; }
+        .guide-search { width: 100%; padding: 15px; font-size: 1rem; border: 2px solid var(--duo-gray); border-radius: 12px; margin-bottom: 20px; max-width: 600px; }
+        .txt-zh { font-size: 1.4rem; font-weight: bold; line-height: 1.2; }
+        .txt-py { font-size: 0.8rem; color: #888; display: block; margin-bottom: 2px; }
+        .txt-pt { font-size: 1rem; font-weight: bold; }
+
+        /* OVERLAYS */
+        .screen-overlay { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: white; z-index: 50; padding: 20px; box-sizing: border-box; 
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
+        }
+        
+        .menu-title { font-size: 1.8rem; font-weight: bold; color: var(--duo-green); margin-bottom: 10px; margin-top: 10px; }
+        .total-score-display { font-size: 1.2rem; font-weight: bold; color: var(--duo-yellow); margin-bottom: 10px; background: #fff8e1; padding: 5px 15px; border-radius: 20px; border: 2px solid var(--duo-yellow); }
+        .menu-logo { width: 90px; height: 90px; object-fit: cover; border-radius: 20px; margin-bottom: 5px; margin-top: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 3px solid var(--duo-green); }
+        .vocab-select-container { width: 100%; max-width: 600px; margin-bottom: 15px; }
+        .vocab-select { width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--duo-gray); font-size: 1rem; font-weight: bold; color: var(--duo-text); outline: none; background: #fff; }
+        .vocab-select:focus { border-color: var(--duo-blue); }
+
+        /* GRID LAYOUT FOR MENU */
+        .mode-select { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); 
+            gap: 12px; 
+            width: 100%; 
+            max-width: 600px; 
+        }
+        
+        .mode-btn { 
+            padding: 15px; border: 2px solid var(--duo-gray); border-radius: 16px; background: white; 
+            text-align: center; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 0 #ccc; position: relative;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .mode-btn:hover { transform: translateY(-2px); border-color: var(--duo-blue); }
+        .mode-btn:active { transform: translateY(2px); box-shadow: none; }
+        .mode-title { font-weight: bold; font-size: 1.1rem; display: block; margin-bottom: 5px; }
+        .mode-desc { font-size: 0.85rem; color: #666; }
+
+        .study-btn-container { margin-top: 20px; width: 100%; max-width: 600px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 30px; }
+        .study-btn-container .mode-btn { background: #f8f9fa; }
+        .badge { background: var(--duo-red); color: white; border-radius: 50%; padding: 2px 8px; font-size: 0.9rem; position: absolute; right: 10px; top: 10px; font-weight: bold; box-shadow: 0 2px 0 rgba(0,0,0,0.2); }
+
+        /* Responsive Grid Adjustments */
+        @media (min-width: 600px) {
+            .mode-select, .study-btn-container { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        .daily-goal-container { width: 100%; max-width: 600px; margin-bottom: 20px; text-align: left; }
+        .daily-label { font-size: 0.9rem; color: #777; font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between;}
+        .daily-bar-bg { width: 100%; height: 12px; background: #eee; border-radius: 6px; overflow: hidden; }
+        .daily-bar-fill { height: 100%; background: var(--duo-yellow); width: 0%; transition: width 0.5s; }
+
+        .study-list { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 10px; margin-top: 20px; margin-bottom: 50px; }
+        .study-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 2px solid var(--duo-gray); border-radius: 12px; background: #f9f9f9; }
+        .trash-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; opacity: 0.5; padding: 10px; }
+        .trash-btn:hover { opacity: 1; transform: scale(1.1); color: var(--duo-red); }
+        #confetti-canvas { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 100; }
+        @keyframes shake { 0%,100% {transform:translateX(0);} 25% {transform:translateX(-5px);} 75% {transform:translateX(5px);} }
+        @keyframes flashRed { 0% {background-color: var(--bg-wrong);} 100% {background-color: white;} }
+        @keyframes slideIn { from {opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);} }
+        .penalty-anim { position: absolute; color: var(--duo-red); font-weight: bold; font-size: 1.5rem; animation: floatUp 1s forwards; pointer-events: none; z-index: 100;}
+        @keyframes floatUp { 0% {opacity:1; transform:translate(-50%, 0);} 100% {opacity:0; transform:translate(-50%, -50px);} }
+        .check-btn { width: 100%; max-width: 200px; padding: 15px; background: var(--duo-green); color: white; border: none; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #46a302; margin-top: 20px; }
+        .check-btn:active { transform: translateY(4px); box-shadow: none; }
+        .check-btn.disabled { background: #ccc; box-shadow: none; cursor: default; }
+
+        @media (max-height: 800px) {
+            .menu-logo { width: 70px; height: 70px; margin-top: 5px; }
+            .menu-title { font-size: 1.4rem; margin-top: 5px; margin-bottom: 5px; }
+            .total-score-display { margin-bottom: 5px; padding: 2px 10px; font-size: 0.9rem; }
+            .daily-goal-container { margin-bottom: 10px; }
+            .vocab-select-container { margin-bottom: 10px; }
+            .mode-select { gap: 5px; }
+            .mode-btn { padding: 10px; }
+            .mode-desc { display: none; }
+            .study-btn-container { margin-top: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="top-row">
+            <div style="font-size:24px; cursor:pointer" onclick="goToMenu()">✕</div>
+            <div class="stats-container">
+                <div class="streak-display" id="streak-el">🔥 0</div>
+                <div class="xp-display" id="xp-el">💎 0</div>
+            </div>
+        </div>
+        <div class="timer-container" id="timer-box">
+            <div class="timer-bar" id="timer-bar"></div>
+        </div>
+    </header>
+
+    <main id="game-area">
+    </main>
+
+    <div class="screen-overlay center-content" id="menu-screen">
+        <img src="Gemini_Generated_Image_6b9fo6b9fo6b9fo6.png" alt="Mandarim Total Logo" class="menu-logo" onerror="this.style.display='none'">
+        <div class="menu-title">Mandarim Total</div>
+        <div class="total-score-display" id="menu-total-score">💎 Total XP: 0</div>
+        
+        <div class="daily-goal-container">
+            <div class="daily-label"><span>Meta Diária</span> <span id="daily-text">0 / 100 XP</span></div>
+            <div class="daily-bar-bg"><div class="daily-bar-fill" id="daily-bar"></div></div>
+        </div>
+
+        <div class="vocab-select-container">
+            <select id="vocab-select" class="vocab-select" onchange="changeVocab(this.value)">
+                <option value="duolingo" selected>📚 Vocabulário: Duolingo (Padrão)</option>
+                <option value="hsk1">👶 Vocabulário: HSK 1 (Básico)</option>
+                <option value="hsk2">👦 Vocabulário: HSK 2 (Elementar)</option>
+                <option value="hsk3">🧑‍🎓 Vocabulário: HSK 3 (Intermédio)</option>
+                <option value="radicals">🈴 Vocabulário: Radicais (214)</option>
+            </select>
+        </div>
+
+        <div class="mode-select">
+            <button class="mode-btn" onclick="startGame('easy')">
+                <span class="mode-title">🍵 Zen (Fácil)</span>
+                <span class="mode-desc">Sem tempo. 8 Pares de Cartas.</span>
+            </button>
+            <button class="mode-btn" onclick="startGame('normal')">
+                <span class="mode-title">⏱️ Normal</span>
+                <span class="mode-desc">Contra o relógio. 10 Pares.</span>
+            </button>
+            <button class="mode-btn" onclick="startGame('hard')" style="border-color: #ff9600;">
+                <span class="mode-title">🥋 Mestre (Difícil)</span>
+                <span class="mode-desc">Tempo curto. <b>SÓ HANZI</b>. 12 Pares.</span>
+            </button>
+            <button class="mode-btn" onclick="startQuizMode()" style="border-color: var(--duo-purple);">
+                <span class="mode-title" style="color: var(--duo-purple);">❓ Quiz Rápido</span>
+                <span class="mode-desc">10 Perguntas Aleatórias.</span>
+            </button>
+            <button class="mode-btn" onclick="startAssembleMode()" style="border-color: var(--duo-blue);">
+                <span class="mode-title" style="color: var(--duo-blue);">🧩 Montar Frases</span>
+                <span class="mode-desc">Ordena os blocos.</span>
+            </button>
+            <button class="mode-btn" onclick="startWriteMode()" style="border-color: var(--duo-orange);">
+                <span class="mode-title" style="color: var(--duo-orange);">✍️ Escrever Frases</span>
+                <span class="mode-desc">Digita a tradução completa.</span>
+            </button>
+            <button class="mode-btn" onclick="startSpeechMode()" style="border-color: var(--duo-teal);">
+                <span class="mode-title" style="color: var(--duo-teal);">🎙️ Pronúncia</span>
+                <span class="mode-desc">Fala para treinar os tons.</span>
+            </button>
+             <button class="mode-btn" onclick="startHanziMode()" style="border-color: var(--duo-pink);">
+                <span class="mode-title" style="color: var(--duo-pink);">✍️ Escrita Hanzi</span>
+                <span class="mode-desc">Treina a caligrafia.</span>
+            </button>
+             <button class="mode-btn" onclick="openFlashcards()" style="background: #e0f7fa; border-color: var(--duo-blue);">
+                <span class="mode-title">🗂️ Flashcards</span>
+                <span class="mode-desc">Escrita e Memória.</span>
+            </button>
+        </div>
+
+        <div class="study-btn-container">
+            <button class="mode-btn" onclick="openStudyScreen()" style="background: #fff8e1; border-color: var(--duo-yellow);">
+                <span class="mode-title">📚 Erros</span>
+                <span class="mode-desc">Rever falhas.</span>
+                <span class="badge" id="study-badge" style="display:none">0</span>
+            </button>
+            <button class="mode-btn" onclick="openStatsScreen()">
+                <span class="mode-title">📊 Estatísticas</span>
+                <span class="mode-desc">Pontos Fortes.</span>
+            </button>
+            <button class="mode-btn" onclick="openGuideScreen()">
+                <span class="mode-title">📖 Dicionário</span>
+                <span class="mode-desc">Guia de Estudo.</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ECRÃ DE ERROS / ESTUDO -->
+    <div class="screen-overlay" id="study-screen" style="display:none; align-items: center; justify-content: start;">
+        <h2 style="margin-top: 20px; color: var(--duo-text);">Caderno de Erros</h2>
+        <p id="study-empty-msg" style="color:#888; display:none">Não tens erros guardados. Bom trabalho!</p>
+        <div class="study-list" id="study-list-container"></div>
+        <button class="mode-btn" style="margin-top:20px; text-align:center; width: auto;" onclick="goToMenu()">Voltar ao Menu</button>
+    </div>
+
+    <!-- ECRÃ DE FLASHCARDS -->
+    <div class="screen-overlay" id="flashcard-screen" style="display:none; align-items: center; justify-content: center;">
+        <h2 style="margin-bottom: 5px;">Flashcards</h2>
+        <p style="color:#777; margin-bottom:10px; font-size:0.9rem">Escreve a tradução ou desiste se não souberes.</p>
+        <div id="fc-area"></div>
+        <button class="trash-btn" style="margin-top:20px; opacity: 1; color: var(--duo-blue); font-weight:bold" onclick="goToMenu()">Sair dos Flashcards</button>
+    </div>
+
+    <!-- ECRÃ DE ESTATÍSTICAS -->
+    <div class="screen-overlay" id="stats-screen" style="display:none; align-items: center; justify-content: start;">
+        <h2 style="margin-top: 20px;">O Teu Progresso</h2>
+        <div class="stat-section">
+            <div class="stat-header">💪 Pontos Fortes <span style="font-size:0.8rem; color:#777">(>60% Acerto)</span></div>
+            <div class="stat-list" id="strong-list"></div>
+        </div>
+        <div class="stat-section">
+            <div class="stat-header">🌱 Áreas a Melhorar <span style="font-size:0.8rem; color:#777">(≤60% Acerto)</span></div>
+            <div class="stat-list" id="weak-list"></div>
+        </div>
+        <button class="mode-btn" style="margin-top:20px; text-align:center; width: auto;" onclick="goToMenu()">Voltar ao Menu</button>
+    </div>
+
+    <!-- ECRÃ GUIA DE ESTUDO (DICIONÁRIO) -->
+    <div class="screen-overlay" id="guide-screen" style="display:none; align-items: center; justify-content: start;">
+        <h2 style="margin-top: 20px;">Dicionário Completo</h2>
+        <input type="text" class="guide-search" placeholder="Pesquisar (Português, Pinyin ou Hanzi)..." oninput="filterGuide(this.value)">
+        <div class="study-list" id="guide-list-container"></div>
+        <button class="mode-btn" style="margin-top:20px; text-align:center; width: auto;" onclick="goToMenu()">Voltar ao Menu</button>
+    </div>
+
+    <!-- ECRÃ FINAL -->
+    <div class="screen-overlay center-content" id="end-screen" style="display:none;">
+        <canvas id="confetti-canvas"></canvas>
+        <h1 id="end-emoji" style="font-size: 5rem; margin: 0; z-index:101; position:relative">🏆</h1>
+        <h2 id="end-title" style="z-index:101; position:relative">Fim de Jogo!</h2>
+        <p id="end-msg" style="color: #777; font-size: 1.2rem; z-index:101; position:relative"></p>
+        <p style="font-size: 1rem; color: var(--duo-yellow); font-weight:bold; margin-top:5px; z-index:101; position:relative" id="end-total-xp"></p>
+        <button class="mode-btn" style="text-align:center; background:var(--duo-green); color:white; border:none; margin-top:20px; z-index:101; position:relative" onclick="location.reload()">Jogar Novamente</button>
+    </div>
+
+    <script>
+        // --- AUDIO SYSTEM ---
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSfx(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+            osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+            if (type === 'correct') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, audioCtx.currentTime); osc.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.1);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); osc.frequency.linearRampToValueAtTime(100, audioCtx.currentTime + 0.2);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'win') {
+                playTone(523.25, 0, 0.2); playTone(659.25, 0.2, 0.2); playTone(783.99, 0.4, 0.4);
+            } else if (type === 'flip') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime); gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            }
+        }
+        function playTone(freq, startTime, duration) {
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.frequency.value = freq; gain.gain.setValueAtTime(0.1, audioCtx.currentTime + startTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + startTime + duration);
+            osc.start(audioCtx.currentTime + startTime); osc.stop(audioCtx.currentTime + startTime + duration);
+        }
+
+        // --- DATABASE: PALAVRAS ---
+        const vocabDatabase = {
+            duolingo: [
+                ["水","Shuǐ","Água"],["茶","Chá","Chá"],["咖啡","Kāfēi","Café"],["牛奶","Niúnǎi","Leite"],["果汁","Guǒzhī","Sumo"],["可乐","Kělè","Coca-Cola"],
+                ["绿茶","Lǜchá","Chá Verde"],["冰","Bīng","Gelo"],["米饭","Mǐfàn","Arroz"],["汤","Tāng","Sopa"],["豆腐","Dòufu","Tofu"],
+                ["粥","Zhōu","Papas de Arroz"],["菜","Cài","Prato/Comida"],["零食","Língshí","Snacks"],["糖","Táng","Açúcar"],["盐","Yán","Sal"],
+                ["蛋糕","Dàngāo","Bolo"],["水果","Shuǐguǒ","Fruta"],["饺子","Jiǎozi","Dumpling"],["面条","Miàntiáo","Massa"],["面包","Miànbāo","Pão"],
+                ["饼干","Bǐnggān","Bolacha"],["巧克力","Qiǎokèlì","Chocolate"],["冰淇淋","Bīngqílín","Gelado"],["肉","Ròu","Carne"],["烤鸭","Kǎoyā","Pato Assado"],
+                ["火锅","Huǒguō","Hot Pot"],["蔬菜","Shūcài","Vegetais"],["土豆","Tǔdòu","Batata"],["西红柿","Xīhóngshì","Tomate"],["爆米花","Bàomǐhuā","Pipocas"],
+                ["人","Rén","Pessoa"],["男人","Nánrén","Homem"],["女人","Nǚrén","Mulher"],["孩儿","Háir","Criança"],["女孩儿","Nǚháir","Rapariga"],
+                ["老师","Lǎoshī","Professor"],["医生","Yīshēng","Médico"],["律师","Lǜshī","Advogado"],["学生","Xuésheng","Estudante"],
+                ["爸爸","Bàba","Pai"],["妈妈","Māma","Mãe"],["儿子","Érzi","Filho"],["女儿","Nǚ'ér","Filha"],["哥哥","Gēge","Irmão +velho"],
+                ["弟弟","Dìdi","Irmão +novo"],["姐姐","Jiějie","Irmã (+velha)"],["妹妹","Mèimei","Irmã (+nova)"],["爷爷","Yéye","Avô"],
+                ["中国","Zhōngguó","China"],["美国","Měiguó","EUA"],["日本","Rìběn","Japão"],["韩国","Hánguó","Coreia do Sul"],
+                ["是","Shì","Ser"],["有","Yǒu","Ter"],["在","Zài","Estar/Em"],["去","Qù","Ir"],["来","Lái","Vir"],["吃","Chī","Comer"],["喝","Hē","Beber"],
+                ["做","Zuò","Fazer"],["看","Kàn","Ver/Ler"],["听","Tīng","Ouvir"],["说","Shuō","Falar"],["叫","Jiào","Chamar-se"],["买","Mǎi","Comprar"],
+                ["喜欢","Xǐhuan","Gostar"],["爱","Ài","Amar"],["会","Huì","Saber/Poder"],
+                ["家","Jiā","Casa"],["学校","Xuéxiào","Escola"],["饭馆","Fànguǎn","Restaurante"],["商店","Shāngdiàn","Loja"],["医院","Yīyuàn","Hospital"],
+                ["今天","Jīntiān","Hoje"],["现在","Xiànzài","Agora"],["大","Dà","Grande"],["小","Xiǎo","Pequeno"],["好","Hǎo","Bom"],["高兴","Gāoxìng","Feliz"],
+                ["你好","Nǐhǎo","Olá"],["谢谢","Xièxie","Obrigado"],["再见","Zàijiàn","Adeus"],["不","Bù","Não"],["一","Yī","Um"],["二","Èr","Dois"],["三","Sān","Três"]
+            ],
+            hsk1: [
+                ["我","Wǒ","Eu"],["你","Nǐ","Você"],["他","Tā","Ele"],["她","Tā","Ela"],["我们","Wǒmen","Nós"],["好","Hǎo","Bom"],["很","Hěn","Muito"],
+                ["是","Shì","Ser"],["有","Yǒu","Ter"],["在","Zài","Estar"],["来","Lái","Vir"],["去","Qù","Ir"],["吃","Chī","Comer"],["喝","Hē","Beber"],
+                ["听","Tīng","Ouvir"],["说","Shuō","Falar"],["读","Dú","Ler"],["写","Xiě","Escrever"],["看","Kàn","Ver"],["做","Zuò","Fazer"],["坐","Zuò","Sentar"],
+                ["买","Mǎi","Comprar"],["开","Kāi","Abrir"],["回","Huí","Voltar"],["爱","Ài","Amar"],["喜欢","Xǐhuan","Gostar"],["想","Xiǎng","Querer"],
+                ["认识","Rènshi","Conhecer"],["会","Huì","Saber"],["能","Néng","Poder"],["住","Zhù","Morar"],["叫","Jiào","Chamar-se"],["大","Dà","Grande"],
+                ["小","Xiǎo","Pequeno"],["多","Duō","Muito"],["少","Shǎo","Pouco"],["冷","Lěng","Frio"],["热","Rè","Quente"],["高兴","Gāoxìng","Contente"],
+                ["人","Rén","Pessoa"],["名字","Míngzi","Nome"],["书","Shū","Livro"],["汉语","Hànyǔ","Chinês"],["字","Zì","Carácter"],["桌子","Zhuōzi","Mesa"],
+                ["椅子","Yǐzi","Cadeira"],["家","Jiā","Casa"],["学校","Xuéxiào","Escola"],["饭馆","Fànguǎn","Restaurante"],["商店","Shāngdiàn","Loja"],
+                ["医院","Yīyuàn","Hospital"],["火车站","Huǒchēzhàn","Estação"],["中国","Zhōngguó","China"],["北京","Běijīng","Pequim"],
+                ["点","Diǎn","Hora"],["分","Fēn","Minuto"],["年","Nián","Ano"],["月","Yuè","Mês"],["日","Rì","Dia"],["今天","Jīntiān","Hoje"],
+                ["明天","Míngtiān","Amanhã"],["昨天","Zuótiān","Ontem"],["上午","Shàngwǔ","Manhã"],["中午","Zhōngwǔ","Meio-dia"],["下午","Xiàwǔ","Tarde"],
+                ["水","Shuǐ","Água"],["茶","Chá","Chá"],["菜","Cài","Prato"],["米饭","Mǐfàn","Arroz"],["水果","Shuǐguǒ","Fruta"],["苹果","Píngguǒ","Maçã"],
+                ["钱","Qián","Dinheiro"],["飞机","Fēijī","Avião"],["出租车","Chūzūchē","Táxi"],["电视","Diànshì","TV"],["电脑","Diànnǎo","Computador"],
+                ["电影","Diànyǐng","Filme"],["天气","Tiānqì","Tempo"],["猫","Māo","Gato"],["狗","Gǒu","Cão"],["东西","Dōngxi","Coisas"],
+                ["老师","Lǎoshī","Professor"],["学生","Xuésheng","Estudante"],["医生","Yīshēng","Médico"],["爸爸","Bàba","Pai"],["妈妈","Māma","Mãe"],
+                ["儿子","Érzi","Filho"],["女儿","Nǚ'ér","Filha"],["朋友","Péngyou","Amigo"],["同学","Tóngxué","Colega"],["谁","Shéi","Quem"],
+                ["什么","Shénme","O que"],["哪","Nǎ","Qual"],["哪儿","Nǎr","Onde"],["几","Jǐ","Quantos"],["多少","Duōshao","Quanto"],["怎么","Zěnme","Como"],
+                ["怎么样","Zěnmeyàng","Que tal"],["不","Bù","Não"],["没","Méi","Não"],["很","Hěn","Muito"],["太","Tài","Demasiado"],["都","Dōu","Todos"],
+                ["和","Hé","E"],["在","Zài","Em"],["的","De","(Posse)"],["了","Le","(Passado)"],["吗","Ma","(Pergunta)"],["呢","Ne","(E tu?)"],
+                ["谢谢","Xièxie","Obrigado"],["不客气","Bùkèqì","De nada"],["再见","Zàijiàn","Adeus"],["对不起","Duìbuqǐ","Desculpa"]
+            ],
+            hsk2: [
+                ["它","Tā","Ele/Ela (Neutro)"],["大家","Dàjiā","Todos"],["身体","Shēntǐ","Corpo"],["公共汽车","Gōnggòngqìchē","Autocarro"],
+                ["自行车","Zìxíngchē","Bicicleta"],["船","Chuán","Barco"],["羊肉","Yángròu","Carne de carneiro"],["鸡蛋","Jīdàn","Ovo"],["西瓜","Xīguā","Melancia"],
+                ["咖啡","Kāfēi","Café"],["药","Yào","Remédio"],["手机","Shǒujī","Telemóvel"],["手表","Shǒubiǎo","Relógio"],["眼睛","Yǎnjing","Olhos"],
+                ["颜色","Yánsè","Cor"],["红","Hóng","Vermelho"],["白","Bái","Branco"],["黑","Hēi","Preto"],["左边","Zuǒbian","Esquerda"],["右边","Yòubian","Direita"],
+                ["旁边","Pángbiān","Ao lado"],["外","Wài","Fora"],["门","Mén","Porta"],["房间","Fángjiān","Quarto"],["丈夫","Zhàngfu","Marido"],["妻子","Qīzi","Esposa"],
+                ["孩子","Háizi","Criança"],["男","Nán","Masculino"],["女","Nǚ","Feminino"],["服务员","Fúwùyuán","Empregado"],["早上","Zǎoshang","Manhã cedo"],
+                ["晚上","Wǎnshang","Noite"],["小时","Xiǎoshí","Hora"],["时间","Shíjiān","Tempo"],["去年","Qùnián","Ano passado"],["号","Hào","Número"],
+                ["生日","Shēngrì","Aniversário"],["百","Bǎi","Cem"],["千","Qiān","Mil"],["第一","Dìyī","Primeiro"],["两","Liǎng","Dois"],["件","Jiàn","(Peça)"],
+                ["张","Zhāng","(Folha)"],["次","Cì","Vez"],["公斤","Gōngjīn","Kg"],["元","Yuán","Yuan"],["便宜","Piányi","Barato"],["贵","Guì","Caro"],
+                ["新","Xīn","Novo"],["长","Cháng","Comprido"],["高","Gāo","Alto"],["快","Kuài","Rápido"],["慢","Màn","Lento"],["近","Jìn","Perto"],["远","Yuǎn","Longe"],
+                ["累","Lèi","Cansado"],["忙","Máng","Ocupado"],["晴","Qíng","Ensolarado"],["阴","Yīn","Nublado"],["错","Cuò","Errado"],["快乐","Kuàilè","Feliz"],
+                ["欢迎","Huānyíng","Bem-vindo"],["问","Wèn","Perguntar"],["回答","Huídá","Responder"],["帮助","Bāngzhù","Ajudar"],["介绍","Jièshào","Apresentar"],
+                ["开始","Kāishǐ","Começar"],["准备","Zhǔnbèi","Preparar"],["找","Zhǎo","Procurar"],["给","Gěi","Dar"],["送","Sòng","Entregar"],["穿","Chuān","Vestir"],
+                ["洗","Xǐ","Lavar"],["笑","Xiào","Rir"],["哭","Kū","Chorar"],["懂","Dǒng","Entender"],["告诉","Gàosu","Contar"],["觉得","Juéde","Achar"],
+                ["希望","Xīwàng","Esperar"],["让","Ràng","Deixar"],["休息","Xiūxi","Descansar"],["运动","Yùndòng","Exercício"],["游泳","Yóuyǒng","Nadar"],
+                ["踢足球","Tī zúqiú","Jogar Futebol"],["打篮球","Dǎ lánqiú","Jogar Basquetebol"],["唱歌","Chànggē","Cantar"],["跳舞","Tiàowǔ","Dançar"],
+                ["旅游","Lǚyóu","Viajar"],["上班","Shàngbān","Trabalhar"],["生病","Shēngbìng","Adoecer"],["起床","Qǐchuáng","Levantar"],["睡觉","Shuìjiào","Dormir"],
+                ["完","Wán","Terminar"],["比","Bǐ","Comparado"],["非常","Fēicháng","Extremamente"],["真","Zhēn","Realmente"],["最","Zuì","O mais"],
+                ["已经","Yǐjīng","Já"],["一起","Yìqǐ","Juntos"],["再","Zài","Novamente"],["就","Jiù","Então"],["也","Yě","Também"],["还","Hái","Ainda"],
+                ["因为","Yīnwèi","Porque"],["所以","Suǒyǐ","Por isso"],["但是","Dànshì","Mas"],["虽然","Suīrán","Embora"],["可以","Kěyǐ","Poder"],
+                ["可能","Kěnéng","Talvez"],["为什么要","Wèishénme","Porquê"],["意思","Yìsi","Significado"],["事情","Shìqing","Assunto"]
+            ],
+            hsk3: [
+                ["阿姨","Āyí","Tia"],["矮","Ǎi","Baixo"],["安静","Ānjìng","Silencioso"],["安全","Ānquán","Seguro"],["搬","Bān","Mover"],["班","Bān","Turma"],
+                ["办法","Bànfǎ","Método"],["办公室","Bàngōngshì","Escritório"],["半","Bàn","Metade"],["帮忙","Bāngmáng","Ajudar"],["包","Bāo","Mala"],
+                ["饱","Bǎo","Cheio"],["北方","Běifāng","Norte"],["比较","Bǐjiào","Comparar"],["比赛","Bǐsài","Competição"],["必须","Bìxū","Ter de"],
+                ["变化","Biànhuà","Mudança"],["表示","Biǎoshì","Expressar"],["表演","Biǎoyǎn","Atuar"],["别人","Biérén","Outros"],["宾馆","Bīnguǎn","Hotel"],
+                ["冰箱","Bīngxiāng","Frigorífico"],["才","Cái","Apenas"],["菜单","Càidān","Ementa"],["参加","Cānjiā","Participar"],["草","Cǎo","Relva"],
+                ["层","Céng","Andar"],["差","Chà","Faltar"],["超市","Chāoshì","Supermercado"],["衬衫","Chènshān","Camisa"],["成绩","Chéngjì","Nota"],
+                ["城市","Chéngshì","Cidade"],["迟到","Chídào","Atrasado"],["出现","Chūxiàn","Aparecer"],["厨房","Chúfáng","Cozinha"],["除了","Chúle","Exceto"],
+                ["春","Chūn","Primavera"],["词语","Cíyǔ","Palavra"],["聪明","Cōngming","Inteligente"],["打扫","Dǎsǎo","Limpar"],["打算","Dǎsuàn","Planear"],
+                ["带","Dài","Levar"],["担心","Dānxīn","Preocupar"],["蛋糕","Dàngāo","Bolo"],["当然","Dāngrán","Claro"],["灯","Dēng","Luz"],["地方","Dìfang","Lugar"],
+                ["地铁","Dìtiě","Metro"],["地图","Dìtú","Mapa"],["电梯","Diàntī","Elevador"],["东","Dōng","Este"],["冬","Dōng","Inverno"],["动物","Dòngwù","Animal"],
+                ["短","Duǎn","Curto"],["锻炼","Duànliàn","Exercitar"],["饿","È","Fome"],["耳朵","Ěrduo","Orelha"],["发","Fā","Enviar"],["发烧","Fāshāo","Febre"],
+                ["发现","Fāxiàn","Descobrir"],["方便","Fāngbiàn","Conveniente"],["放","Fàng","Pôr"],["放心","Fàngxīn","Tranquilo"],["分","Fēn","Minuto"],
+                ["附近","Fùjìn","Perto"],["复习","Fùxí","Rever"],["干净","Gānjìng","Limpo"],["敢","Gǎn","Ousar"],["感冒","Gǎnmào","Constipação"],
+                ["刚才","Gāngcái","Há pouco"],["跟","Gēn","Com"],["根据","Gēnjù","De acordo"],["更","Gèng","Mais"],["公园","Gōngyuán","Parque"],
+                ["故事","Gùshi","História"],["刮风","Guāfēng","Ventar"],["关","Guān","Fechar"],["关系","Guānxi","Relação"],["关心","Guānxīn","Cuidar"],
+                ["关于","Guānyú","Sobre"],["国家","Guójiā","País"],["过","Guò","Passar"],["过去","Guòqù","Passado"],["还是","Háishì","Ou"],["害怕","Hàipà","Medo"],
+                ["河","Hé","Rio"],["黑板","Hēibǎn","Quadro"],["护照","Hùzhào","Passaporte"],["花","Huā","Flor"],["花园","Huāyuán","Jardim"],["画","Huà","Desenhar"],
+                ["坏","Huài","Mau"],["环境","Huánjìng","Ambiente"],["换","Huàn","Trocar"],["黄","Huáng","Amarelo"],["会议","Huìyì","Reunião"],
+                ["或者","Huòzhě","Ou"],["几乎","Jīhū","Quase"],["机会","Jīhuì","Oportunidade"],["极","Jí","Extremamente"],["记得","Jìde","Lembrar"],
+                ["季节","Jìjié","Estação"],["检查","Jiǎnchá","Verificar"],["简单","Jiǎndān","Simples"],["讲","Jiǎng","Falar"],["教","Jiāo","Ensinar"],
+                ["脚","Jiǎo","Pé"],["接","Jiē","Receber"],["街道","Jiēdào","Rua"],["节目","Jiémù","Programa"],["节日","Jiérì","Feriado"],["结婚","Jiéhūn","Casar"],
+                ["结束","Jiéshù","Terminar"],["解决","Jiějué","Resolver"],["借","Jiè","Emprestar"],["经常","Jīngcháng","Frequentemente"],
+                ["经过","Jīngguò","Passar"],["经理","Jīnglǐ","Gerente"],["久","Jiǔ","Longo tempo"],["旧","Jiù","Velho"],["句子","Jùzi","Frase"],
+                ["决定","Juédìng","Decidir"],["可爱","Kě'ài","Fofo"],["渴","Kě","Sede"],["刻","Kè","15 min"],["客人","Kèrén","Convidado"],
+                ["空调","Kōngtiáo","Ar condicionado"],["口","Kǒu","Boca"],["哭","Kū","Chorar"],["裤子","Kùzi","Calças"],["筷子","Kuàizi","Pauzinhos"],
+                ["蓝","Lán","Azul"],["老","Lǎo","Velho"],["离开","Líkāi","Partir"],["礼物","Lǐwù","Presente"],["历史","Lìshǐ","História"],["脸","Liǎn","Cara"],
+                ["练习","Liànxí","Praticar"],["了解","Liǎojiě","Compreender"],["邻居","Línjū","Vizinho"],["楼","Lóu","Edifício"],["绿","Lǜ","Verde"],
+                ["马","Mǎ","Cavalo"],["马上","Mǎshàng","Imediatamente"],["满意","Mǎnyì","Satisfeito"],["帽子","Màozi","Chapéu"],["米","Mǐ","Metro"],
+                ["面包","Miànbāo","Pão"],["明白","Míngbai","Entender"],["拿","Ná","Pegar"],["奶奶","Nǎinai","Avó"],["南","Nán","Sul"],["难","Nán","Difícil"],
+                ["难过","Nánguò","Triste"],["年级","Niánjí","Ano escolar"],["年轻","Niánqīng","Jovem"],["鸟","Niǎo","Pássaro"],["努力","Nǔlì","Esforçado"],
+                ["爬山","Páshān","Escalar"],["盘子","Pánzi","Prato"],["胖","Pàng","Gordo"],["皮鞋","Píxié","Sapatos"],["啤酒","Píjiǔ","Cerveja"],
+                ["瓶子","Píngzi","Garrafa"],["其实","Qíshí","Na verdade"],["其他","Qítā","Outros"],["奇怪","Qíguài","Estranho"],["骑","Qí","Montar"],
+                ["起飞","Qǐfēi","Descolar"],["清楚","Qīngchu","Claro"],["秋","Qiū","Outono"],["裙子","Qúnzi","Saia"],["然后","Ránhòu","Depois"],
+                ["热情","Rèqíng","Entusiasta"],["认为","Rènwéi","Pensar"],["认真","Rènzhēn","Sério"],["容易","Róngyì","Fácil"],["如果","Rúguǒ","Se"],
+                ["伞","Sǎn","Guarda-chuva"],["上网","Shàngwǎng","Internet"],["生气","Shēngqì","Zangar"],["声音","Shēngyīn","Som"],["世界","Shìjiè","Mundo"],
+                ["试","Shì","Experimentar"],["瘦","Shòu","Magro"],["叔叔","Shūshu","Tio"],["舒服","Shūfu","Confortável"],["树","Shù","Árvore"],
+                ["数学","Shùxué","Matemática"],["刷牙","Shuāyá","Escovar dentes"],["双","Shuāng","Par"],["水平","Shuǐpíng","Nível"],["司机","Sījī","Motorista"],
+                ["太阳","Tàiyáng","Sol"],["特别","Tèbié","Especial"],["疼","Téng","Dor"],["提高","Tígāo","Melhorar"],["体育","Tǐyù","Desporto"],
+                ["甜","Tián","Doce"],["同意","Tóngyì","Concordar"],["头发","Tóufa","Cabelo"],["突然","Tūrán","De repente"],["图书馆","Túshūguǎn","Biblioteca"],
+                ["腿","Tuǐ","Perna"],["完成","Wánchéng","Completar"],["碗","Wǎn","Tigela"],["万","Wàn","10 mil"],["忘记","Wàngjì","Esquecer"],["为","Wèi","Para"],
+                ["为了","Wèile","A fim de"],["文化","Wénhuà","Cultura"],["西","Xī","Oeste"],["习惯","Xíguàn","Hábito"],["洗手间","Xǐshǒujiān","WC"],
+                ["洗澡","Xǐzǎo","Banho"],["夏","Xià","Verão"],["先","Xiān","Primeiro"],["相信","Xiāngxìn","Acreditar"],["香蕉","Xiāngjiāo","Banana"],
+                ["向","Xiàng","Direção"],["像","Xiàng","Parecer"],["小心","Xiǎoxīn","Cuidado"],["校长","Xiàozhǎng","Diretor"],["新闻","Xīnwén","Notícias"],
+                ["新鲜","Xīnxiān","Fresco"],["信用卡","Xìnyòngkǎ","Cartão crédito"],["行李箱","Xínglixiāng","Mala"],["熊猫","Xióngmāo","Panda"],
+                ["需要","Xūyào","Precisar"],["选择","Xuǎnzé","Escolher"],["要求","Yāoqiú","Exigir"],["爷爷","Yéye","Avô"],["一定","Yídìng","Certamente"],
+                ["一共","Yígòng","Total"],["一会儿","Yíhuìr","Momento"],["一样","Yíyàng","Igual"],["一般","Yìbān","Geral"],["一边","Yìbiān","Ao mesmo tempo"],
+                ["一直","Yìzhí","Sempre"],["以前","Yǐqián","Antes"],["音乐","Yīnyuè","Música"],["银行","Yínháng","Banco"],["饮料","Yǐnliào","Bebida"],
+                ["应该","Yīnggāi","Dever"],["影响","Yǐngxiǎng","Influenciar"],["用","Yòng","Usar"],["游戏","Yóuxì","Jogo"],["有名","Yǒumíng","Famoso"],
+                ["又","Yòu","Novamente"],["遇到","Yùdào","Encontrar"],["元","Yuán","Yuan"],["愿意","Yuànyì","Desejar"],["月亮","Yuèliang","Lua"],
+                ["越","Yuè","Mais"],["站","Zhàn","Estação"],["照顾","Zhàogù","Cuidar"],["照片","Zhàopiàn","Foto"],["照相机","Zhàoxiàngjī","Câmara"],
+                ["只","Zhǐ","Apenas"],["中间","Zhōngjiān","Meio"],["中文","Zhōngwén","Chinês"],["终于","Zhōngyú","Finalmente"],["种","Zhǒng","Tipo"],
+                ["重要","Zhòngyào","Importante"],["周末","Zhōumò","Fim de semana"],["主要","Zhǔyào","Principal"],["注意","Zhùyì","Atenção"],
+                ["自己","Zìjǐ","Próprio"],["自行车","Zìxíngchē","Bicicleta"],["总是","Zǒngshì","Sempre"],["嘴","Zuǐ","Boca"],["最后","Zuìhòu","Último"],
+                ["最近","Zuìjìn","Recentemente"],["作业","Zuòyè","TPC"]
+            ],
+            radicals: [
+                 ["一","yī","um"],["丨","gǔn","linha"],["丶","zhǔ","ponto"],["丿","piě","barra"],["乙","yǐ","segundo"],["亅","jué","gancho"],
+                 ["二","èr","dois"],["亠","tóu","tampa"],["人","rén","pessoa"],["儿","ér","filho"],["入","rù","entrar"],["八","bā","oito"],
+                 ["冂","jiōng","caixa"],["冖","mì","cobertura"],["冫","bīng","gelo"],["几","jī","mesa"],["凵","kǎn","recipiente"],["刀","dāo","faca"],
+                 ["力","lì","força"],["勹","bāo","embrulhar"],["匕","bǐ","colher"],["匚","fāng","caixa"],["匸","xǐ","esconder"],["十","shí","dez"],
+                 ["卜","bǔ","adivinhação"],["卩","jié","selo"],["厂","chǎng","penhasco"],["厶","sī","privado"],["又","yòu","novamente"],
+                 ["口","kǒu","boca"],["囗","wéi","cercar"],["土","tǔ","terra"],["士","shì","erudito"],["夂","zhǐ","seguir"],["夊","suī","andar devagar"],
+                 ["夕","xī","tarde"],["大","dà","grande"],["女","nǚ","mulher"],["子","zǐ","filho"],["宀","mián","telhado"],["寸","cùn","polegada"],
+                 ["小","xiǎo","pequeno"],["尢","wāng","coxo"],["尸","shī","cadáver"],["屮","chè","broto"],["山","shān","montanha"],["巛","chuān","rio"],
+                 ["工","gōng","trabalho"],["己","jǐ","próprio"],["巾","jīn","turban"],["干","gān","seco"],["幺","yāo","pequeno"],["广","guǎng","abrigo"],
+                 ["廴","yǐn","passada longa"],["廾","gǒng","mãos juntas"],["弋","yì","atirar"],["弓","gōng","arco"],["彐","jì","focinho de porco"],
+                 ["彡","shān","cabelo"],["彳","chì","passo"],["心","xīn","coração"],["戈","gē","lança"],["户","hù","porta"],["手","shǒu","mão"],
+                 ["支","zhī","galho"],["攴","pū","bater"],["文","wén","escrita"],["斗","dǒu","medida"],["斤","jīn","machado"],["方","fāng","quadrado"],
+                 ["无","wú","não"],["日","rì","sol"],["曰","yuē","dizer"],["月","yuè","lua"],["木","mù","árvore"],["欠","qiàn","dever"],
+                 ["止","zhǐ","parar"],["歹","dǎi","mau/morte"],["殳","shū","arma"],["毋","wú","não"],["比","bǐ","comparar"],["毛","máo","pelo"],
+                 ["氏","shì","clã"],["气","qì","ar"],["水","shuǐ","água"],["火","huǒ","fogo"],["爪","zhǎo","garra"],["父","fù","pai"],
+                 ["爻","yáo","linhas"],["爿","qiáng","cama"],["片","piàn","fatia"],["牙","yá","dente"],["牛","niú","vaca"],["犬","quǎn","cão"],
+                 ["玄","xuán","profundo"],["玉","yù","jade"],["瓜","guā","melão"],["瓦","wǎ","telha"],["甘","gān","doce"],["生","shēng","vida"],
+                 ["用","yòng","usar"],["田","tián","campo"],["疋","pǐ","parafuso de pano"],["疒","nì","doença"],["癶","bō","passos"],["白","bái","branco"],
+                 ["皮","pí","pele"],["皿","mǐn","prato"],["目","mù","olho"],["矛","máo","lança"],["矢","shǐ","flecha"],["石","shí","pedra"],
+                 ["示","shì","mostrar"],["禸","róu","pegada"],["禾","hé","grão"],["穴","xué","caverna"],["立","lì","ficar de pé"],["竹","zhú","bambu"],
+                 ["米","mǐ","arroz"],["糸","mì","seda"],["缶","fǒu","jarra"],["网","wǎng","rede"],["羊","yáng","ovelha"],["羽","yǔ","pena"],
+                 ["老","lǎo","velho"],["而","ér","e"],["耒","lěi","arado"],["耳","ěr","orelha"],["聿","yù","pincel"],["肉","ròu","carne"],
+                 ["臣","chén","ministro"],["自","zì","próprio"],["至","zhì","chegar"],["臼","jiù","almofariz"],["舌","shé","língua"],["舛","chuǎn","erro"],
+                 ["舟","zhōu","barco"],["艮","gèn","parar"],["色","sè","cor"],["艸","cǎo","erva"],["虍","hū","tigre"],["虫","chóng","inseto"],
+                 ["血","xuè","sangue"],["行","xíng","andar"],["衣","yī","roupa"],["襾","yà","cobertura"],["见","jiàn","ver"],["角","jiǎo","chifre"],
+                 ["言","yán","fala"],["谷","gǔ","vale"],["豆","dòu","feijão"],["豕","shǐ","porco"],["豸","zhì","réptil"],["贝","bèi","concha"],
+                 ["赤","chì","vermelho"],["走","zǒu","correr"],["足","zú","pé"],["身","shēn","corpo"],["车","chē","carro"],["辛","xīn","picante"],
+                 ["辰","chén","manhã"],["辵","chuò","caminhar"],["邑","yì","cidade"],["酉","yǒu","vinho"],["釆","biàn","distinguir"],["里","lǐ","aldeia"],
+                 ["金","jīn","ouro"],["长","cháng","longo"],["门","mén","porta"],["阜","fù","monte"],["隶","lì","escravo"],["隹","zhuī","pássaro curto"],
+                 ["雨","yǔ","chuva"],["青","qīng","azul/verde"],["非","fēi","não"],["面","miàn","rosto"],["革","gé","couro"],["韦","wéi","couro curtido"],
+                 ["韭","jiǔ","alho-poró"],["音","yīn","som"],["页","yè","folha"],["风","fēng","vento"],["飞","fēi","voar"],["食","shí","comer"],
+                 ["首","shǒu","cabeça"],["香","xiāng","fragrância"],["马","mǎ","cavalo"],["骨","gǔ","osso"],["高","gāo","alto"],["髟","biāo","cabelo longo"],
+                 ["斗","dòu","luta"],["鬯","chàng","vinho sacrificial"],["鬲","lì","caldeirão"],["鬼","guǐ","fantasma"],["鱼","yú","peixe"],["鸟","niǎo","pássaro"],
+                 ["卤","lǔ","sal"],["鹿","lù","veado"],["麦","mài","trigo"],["麻","má","cânhamo"],["黄","huáng","amarelo"],["黍","shǔ","milho"],
+                 ["黑","hēi","preto"],["黹","zhǐ","bordado"],["黾","mǐn","rã"],["鼎","dǐng","trípode"],["鼓","gǔ","tambor"],["鼠","shǔ","rato"],
+                 ["鼻","bí","nariz"],["齐","qí","uniforme"],["齿","chǐ","dente"],["龙","lóng","dragão"],["龟","guī","tartaruga"],["龠","yuè","flauta"]
+            ]
+        };
+
+        // --- GERADOR DE FRASES DINÂMICAS ---
+        function generateDynamicSentences() {
+            const b = (z, p) => ({ z, p });
+            
+            const data = {
+                subjects: [
+                    { z: "我", p: "Wǒ", pt: "Eu" },
+                    { z: "你", p: "Nǐ", pt: "Tu" },
+                    { z: "他", p: "Tā", pt: "Ele" },
+                    { z: "她", p: "Tā", pt: "Ela" },
+                    { z: "我们", p: "Wǒmen", pt: "Nós" }
+                ],
+                times: [
+                    { z: "今天", p: "Jīntiān", pt: "Hoje" },
+                    { z: "明天", p: "Míngtiān", pt: "Amanhã" },
+                    { z: "现在", p: "Xiànzài", pt: "Agora" }
+                ],
+                verbs_act: [
+                    { z: "吃", p: "chī", pt: "comer" },
+                    { z: "喝", p: "hē", pt: "beber" },
+                    { z: "买", p: "mǎi", pt: "comprar" }
+                ],
+                objects_food: [
+                    { z: "苹果", p: "píngguǒ", pt: "maçã" },
+                    { z: "米饭", p: "mǐfàn", pt: "arroz" },
+                    { z: "面条", p: "miàntiáo", pt: "massa" },
+                    { z: "茶", p: "chá", pt: "chá" },
+                    { z: "咖啡", p: "kāfēi", pt: "café" },
+                    { z: "水", p: "shuǐ", pt: "água" }
+                ],
+                places: [
+                    { z: "中国", p: "Zhōngguó", pt: "China" },
+                    { z: "北京", p: "Běijīng", pt: "Pequim" },
+                    { z: "学校", p: "xuéxiào", pt: "escola" },
+                    { z: "家", p: "jiā", pt: "casa" },
+                    { z: "饭馆", p: "fànguǎn", pt: "restaurante" }
+                ],
+                professions: [
+                    { z: "学生", p: "xuésheng", pt: "estudante" },
+                    { z: "老师", p: "lǎoshī", pt: "professor" },
+                    { z: "医生", p: "yīshēng", pt: "médico" }
+                ]
+            };
+
+            const sentences = { duolingo: [], hsk1: [], hsk2: [], hsk3: [] };
+
+            data.subjects.forEach(s => {
+                data.verbs_act.forEach(v => {
+                    data.objects_food.forEach(o => {
+                        if (v.pt === 'beber' && ['maçã', 'arroz', 'massa'].includes(o.pt)) return;
+                        if (v.pt === 'comer' && ['chá', 'café', 'água'].includes(o.pt)) return;
+
+                        const pt = `${s.pt} gosta de ${v.pt} ${o.pt}.`;
+                        const zh = `${s.z}喜欢${v.z}${o.z}。`;
+                        sentences.duolingo.push({
+                            pt: pt,
+                            blocks: [b(s.z, s.p), b("喜欢", "xǐhuan"), b(v.z, v.p), b(o.z, o.p), b("。", "")],
+                            valid: [zh]
+                        });
+                        sentences.hsk1.push({
+                             pt: pt,
+                             blocks: [b(s.z, s.p), b("喜欢", "xǐhuan"), b(v.z, v.p), b(o.z, o.p), b("。", "")],
+                             valid: [zh]
+                        });
+                    });
+                });
+            });
+
+            data.subjects.forEach(s => {
+                data.times.forEach(t => {
+                    data.places.forEach(p => {
+                        const pt = `${t.pt} ${s.pt.toLowerCase()} vai para ${['China', 'Pequim'].includes(p.pt) ? '' : 'a '}${p.pt}.`;
+                        const zh1 = `${t.z}${s.z}去${p.z}。`;
+                        const zh2 = `${s.z}${t.z}去${p.z}。`;
+                        sentences.duolingo.push({
+                            pt: pt,
+                            blocks: [b(t.z, t.p), b(s.z, s.p), b("去", "qù"), b(p.z, p.p), b("。", "")],
+                            valid: [zh1, zh2]
+                        });
+                    });
+                });
+            });
+
+            data.subjects.forEach(s => {
+                data.professions.forEach(p => {
+                     const pt = `${s.pt} é ${p.pt}.`;
+                     const zh = `${s.z}是${p.z}。`;
+                     sentences.hsk1.push({
+                        pt: pt,
+                        blocks: [b(s.z, s.p), b("是", "shì"), b(p.z, p.p), b("。", "")],
+                        valid: [zh]
+                     });
+                });
+            });
+
+            sentences.hsk2 = [
+                { pt: "Podes ajudar-me?", blocks: [b("你","Nǐ"),b("可以","kěyǐ"),b("帮助","bāngzhù"),b("我","wǒ"),b("吗","ma"),b("？","")], valid: ["你可以帮助我吗？"] },
+                { pt: "Este relógio é muito caro.", blocks: [b("这","Zhè"),b("块","kuài"),b("手表","shǒubiǎo"),b("很","hěn"),b("贵","guì"),b("。", "")], valid: ["这块手表很贵。"] },
+                { pt: "Estou muito cansado hoje.", blocks: [b("我","Wǒ"),b("今天","jīntiān"),b("很","hěn"),b("累","lèi"),b("。", "")], valid: ["我今天很累。", "今天我很累。"] },
+                { pt: "Bem-vindo à China.", blocks: [b("欢迎","Huānyíng"),b("来","lái"),b("中国","Zhōngguó"),b("。", "")], valid: ["欢迎来中国。"] },
+                { pt: "Ele já foi para casa.", blocks: [b("他","Tā"),b("已经","yǐjīng"),b("回","huí"),b("家","jiā"),b("了","le"),b("。", "")], valid: ["他已经回家了。"] },
+                { pt: "Porque é que estás a rir?", blocks: [b("你","Nǐ"),b("为什么","wèishénme"),b("笑","xiào"),b("？","")], valid: ["你为什么笑？"] }
+            ];
+            
+            sentences.hsk3 = [
+                { pt: "Não te esqueças de trazer o passaporte.", blocks: [b("别","Bié"),b("忘记","wàngjì"),b("带","dài"),b("护照","hùzhào"),b("。", "")], valid: ["别忘记带护照。"] },
+                { pt: "Eu interesso-me muito pela cultura chinesa.", blocks: [b("我","Wǒ"),b("对","duì"),b("中国","Zhōngguó"),b("文化","wénhuà"),b("很","hěn"),b("感","gǎn"),b("兴趣","xìngqù"),b("。", "")], valid: ["我对中国文化很感兴趣。"] },
+                { pt: "O ambiente aqui é muito bom.", blocks: [b("这里","Zhèlǐ"),b("的","de"),b("环境","huánjìng"),b("很","hěn"),b("好","hǎo"),b("。", "")], valid: ["这里的环境很好。"] },
+                { pt: "Eu preciso de ir ao banco levantar dinheiro.", blocks: [b("我","Wǒ"),b("需要","xūyào"),b("去","qù"),b("银行","yínháng"),b("取","qǔ"),b("钱","qián"),b("。", "")], valid: ["我需要去银行取钱。"] },
+                { pt: "Amanhã vai chover?", blocks: [b("明天","Míngtiān"),b("会","huì"),b("下雨",p="xiàyǔ"),b("吗","ma"),b("？","")], valid: ["明天会下雨吗？"] }
+            ];
+
+            Object.keys(sentences).forEach(k => sentences[k].sort(() => 0.5 - Math.random()));
+            return sentences;
+        }
+
+        // --- DATABASE: FRASES (Gerada) ---
+        const sentenceDatabase = generateDynamicSentences();
+
+        // Vocabulário inicial
+        let currentVocabKey = 'duolingo';
+        let vocab = vocabDatabase.duolingo.map(item => ({ zh: item[0], py: item[1], pt: item[2] }));
+
+        function changeVocab(key) {
+            currentVocabKey = key;
+            const newRaw = vocabDatabase[key];
+            vocab = newRaw.map(item => ({ zh: item[0], py: item[1], pt: item[2] }));
+            if(document.getElementById('game-area').innerHTML !== "") {
+                goToMenu();
+            }
+        }
+
+        // --- GESTÃO DE ESTUDO & ESTATÍSTICAS ---
+        let studyList = JSON.parse(localStorage.getItem('mandarim_study')) || [];
+        let wordStats = JSON.parse(localStorage.getItem('mandarim_stats')) || {};
+
+        function trackWordResult(wordObj, isCorrect) {
+            if(!wordObj) return;
+            const key = wordObj.zh || wordObj; 
+            if(!wordStats[key]) wordStats[key] = { correct: 0, wrong: 0 };
+            if(isCorrect) wordStats[key].correct++; else wordStats[key].wrong++;
+            localStorage.setItem('mandarim_stats', JSON.stringify(wordStats));
+        }
+
+        function addToStudy(vocabItem) {
+            const exists = studyList.some(w => w.zh === vocabItem.zh);
+            if (!exists) {
+                studyList.push(vocabItem);
+                localStorage.setItem('mandarim_study', JSON.stringify(studyList));
+                updateStudyBadge();
+            }
+        }
+
+        function removeFromStudy(index) {
+            studyList.splice(index, 1);
+            localStorage.setItem('mandarim_study', JSON.stringify(studyList));
+            renderStudyList();
+            updateStudyBadge();
+            if(document.getElementById('flashcard-screen').style.display === 'flex') loadNextFlashcard();
+        }
+
+        function updateStudyBadge() {
+            const badge = document.getElementById('study-badge');
+            badge.style.display = studyList.length > 0 ? 'block' : 'none';
+            badge.innerText = studyList.length;
+        }
+
+        // --- VARIÁVEIS DE JOGO ---
+        let totalXP = parseInt(localStorage.getItem('mandarim_total_xp')) || 0;
+        let dailyXP = 0;
+        let lastPlayedDate = localStorage.getItem('mandarim_last_date');
+
+        let state = {
+            sessionScore: 0, streak: 0, matchesFound: 0, totalPairs: 0, timer: null, maxTime: 0, timeLeft: 0, penalty: 0,
+            firstCard: null, isLocked: false, activeVocab: [], isQuizMode: false, quizIndex: 0, quizQuestions: [], currentFlashcard: null,
+            // Sentence Mode Vars
+            currentSentence: null, sentencePool: [], placedBlocks: [], shuffledBlocks: [],
+            // Speech Mode
+            recognition: null,
+            // Hanzi Mode
+            hanziCtx: null, isDrawing: false, lastX: 0, lastY: 0
+        };
+
+        const els = {
+            game: document.getElementById('game-area'),
+            menu: document.getElementById('menu-screen'),
+            study: document.getElementById('study-screen'),
+            stats: document.getElementById('stats-screen'),
+            guide: document.getElementById('guide-screen'),
+            flashcard: document.getElementById('flashcard-screen'),
+            end: document.getElementById('end-screen'),
+            xp: document.getElementById('xp-el'),
+            streak: document.getElementById('streak-el'),
+            timerBox: document.getElementById('timer-box'),
+            timerBar: document.getElementById('timer-bar'),
+            menuTotal: document.getElementById('menu-total-score'),
+            endTotal: document.getElementById('end-total-xp')
+        };
+
+        // --- 4. NAVEGAÇÃO & DAILY XP ---
+        function checkDailyReset() {
+            const today = new Date().toDateString();
+            if (lastPlayedDate !== today) {
+                dailyXP = 0; localStorage.setItem('mandarim_daily_xp', 0); localStorage.setItem('mandarim_last_date', today);
+                lastPlayedDate = today;
+            } else { dailyXP = parseInt(localStorage.getItem('mandarim_daily_xp')) || 0; }
+            updateDailyUI();
+        }
+
+        function updateDailyUI() {
+            const bar = document.getElementById('daily-bar');
+            const text = document.getElementById('daily-text');
+            const pct = Math.min(100, (dailyXP / 100) * 100);
+            bar.style.width = `${pct}%`;
+            text.innerText = `${dailyXP} / 100 XP`;
+        }
+
+        function goToMenu() {
+            // Stop speech recognition if active
+            if (state.recognition) {
+                try {
+                    state.recognition.stop();
+                    state.recognition = null;
+                } catch(e) {}
+            }
+
+            els.game.innerHTML = ''; clearInterval(state.timer);
+            els.timerBox.style.display = 'none';
+            [els.end, els.study, els.stats, els.guide, els.flashcard].forEach(el => el.style.display = 'none');
+            els.menu.style.display = 'flex';
+            els.xp.innerText = `💎 ${totalXP}`; els.menuTotal.innerText = `💎 Total XP: ${totalXP}`;
+            checkDailyReset(); updateStudyBadge();
+        }
+
+        // --- GAME: HANZI WRITING ---
+        function startHanziMode() {
+            state.activeVocab = [...vocab].sort(() => 0.5 - Math.random()).slice(0, 10);
+            state.quizIndex = 0; state.sessionScore = 0; state.streak = 0; updateStats();
+            els.menu.style.display = 'none';
+            renderHanziLevel();
+        }
+
+        function renderHanziLevel() {
+            if(state.quizIndex >= state.activeVocab.length) { gameOver(true); return; }
+            const word = state.activeVocab[state.quizIndex];
+            // Pick just the first char if multiple
+            const charToDraw = word.zh[0]; 
+            
+            els.game.innerHTML = `
+                <div class="hanzi-container">
+                    <div class="hanzi-prompt">
+                        <div style="font-size:1.2rem;color:#888">${word.py}</div>
+                        <div style="font-size:1rem;color:var(--duo-blue);font-weight:bold">${word.pt}</div>
+                        <div style="font-size:0.9rem;color:#ccc;margin-top:5px">Desenha: "${charToDraw}"</div>
+                    </div>
+                    <div class="hanzi-canvas-wrapper">
+                        <canvas id="hanzi-bg-canvas" width="300" height="300"></canvas>
+                        <canvas id="hanzi-canvas" width="300" height="300"></canvas>
+                    </div>
+                    <div class="hanzi-controls">
+                        <button class="hanzi-tool-btn" onclick="clearCanvas()">Borrar</button>
+                        <button class="hanzi-tool-btn" onclick="toggleGuide()">Alternar Guia</button>
+                        <button class="hanzi-tool-btn" onclick="checkHanziWriting('${charToDraw}')">Verificar</button>
+                    </div>
+                     <div class="hanzi-feedback" id="hanzi-feedback"></div>
+                </div>
+            `;
+            
+            initCanvas(charToDraw);
+        }
+
+        function initCanvas(char) {
+            const canvas = document.getElementById('hanzi-canvas');
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            
+            const bgCanvas = document.getElementById('hanzi-bg-canvas');
+            const bgCtx = bgCanvas.getContext('2d', { willReadFrequently: true });
+
+            // Draw Guide on BG Canvas
+            bgCtx.font = "240px 'KaiTi', 'SimKai', 'serif'";
+            bgCtx.textAlign = "center";
+            bgCtx.textBaseline = "middle";
+            bgCtx.fillStyle = "#f0f0f0"; // Light Gray Guide
+            bgCtx.fillText(char, 150, 150);
+
+            // Setup User Canvas
+            ctx.lineWidth = 20; // Medium Brush
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.strokeStyle = '#333';
+            
+            state.hanziCtx = ctx;
+            state.isDrawing = false;
+            
+            // Unified Pointer Events
+            canvas.onpointerdown = startDraw;
+            canvas.onpointermove = draw;
+            canvas.onpointerup = stopDraw;
+            canvas.onpointercancel = stopDraw;
+            canvas.onpointerout = stopDraw;
+        }
+        
+        function getPos(e) {
+            const canvas = document.getElementById('hanzi-canvas');
+            const rect = canvas.getBoundingClientRect();
+            // PointerEvent gives clientX/Y directly
+            return {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+        }
+
+        function startDraw(e) {
+            e.preventDefault();
+            state.isDrawing = true;
+            const canvas = document.getElementById('hanzi-canvas');
+            canvas.setPointerCapture(e.pointerId); // Capture pointer
+            const pos = getPos(e);
+            state.lastX = pos.x;
+            state.lastY = pos.y;
+        }
+        
+        function draw(e) {
+            e.preventDefault();
+            if(!state.isDrawing) return;
+            const pos = getPos(e);
+            const ctx = state.hanziCtx;
+            ctx.beginPath();
+            ctx.moveTo(state.lastX, state.lastY);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            state.lastX = pos.x;
+            state.lastY = pos.y;
+        }
+        
+        function stopDraw(e) {
+            e.preventDefault();
+            state.isDrawing = false;
+             const canvas = document.getElementById('hanzi-canvas');
+            canvas.releasePointerCapture(e.pointerId);
+        }
+
+        function clearCanvas() {
+            const canvas = document.getElementById('hanzi-canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+        }
+
+        function toggleGuide() {
+            const bg = document.getElementById('hanzi-bg-canvas');
+            bg.style.display = bg.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function checkHanziWriting(char) {
+            const userCanvas = document.getElementById('hanzi-canvas');
+            const userCtx = userCanvas.getContext('2d');
+            
+            // Re-draw guide in memory for strict comparison (Black)
+            const refCanvas = document.createElement('canvas');
+            refCanvas.width = 300; refCanvas.height = 300;
+            const refCtx = refCanvas.getContext('2d');
+            refCtx.font = "240px 'KaiTi', 'SimKai', 'serif'";
+            refCtx.textAlign = "center";
+            refCtx.textBaseline = "middle";
+            refCtx.fillStyle = "black";
+            refCtx.fillText(char, 150, 150);
+
+            const userImg = userCtx.getImageData(0, 0, 300, 300).data;
+            const refImg = refCtx.getImageData(0, 0, 300, 300).data;
+            
+            let matchCount = 0;
+            let refCount = 0;
+            let totalPixelCount = 0;
+
+            for (let i = 0; i < userImg.length; i += 4 * 4) { 
+                const userAlpha = userImg[i+3];
+                const refAlpha = refImg[i+3];
+                
+                if (refAlpha > 100) {
+                    refCount++;
+                    if (userAlpha > 100) matchCount++;
+                }
+                if (userAlpha > 100) totalPixelCount++;
+            }
+
+            // Lowered Coverage Threshold to 15% because brush is thinner than font
+            const coverage = refCount > 0 ? (matchCount / refCount) : 0;
+            // Added Precision Check to prevent just filling the screen
+            const precision = totalPixelCount > 0 ? (matchCount / totalPixelCount) : 0;
+            
+            const feedback = document.getElementById('hanzi-feedback');
+            
+            // Show guide for visual comparison
+            document.getElementById('hanzi-bg-canvas').style.display = 'block';
+            
+            if (coverage > 0.15 && precision > 0.3) {
+                feedback.innerHTML = `<span style="color:var(--duo-green)">Bom trabalho! (Cobriste ${(coverage*100).toFixed(0)}%)</span>`;
+                playSfx('correct'); updateScore(15);
+                state.quizIndex++;
+                setTimeout(renderHanziLevel, 1500);
+            } else {
+                 feedback.innerHTML = `<span style="color:var(--duo-red)">Tenta cobrir melhor. (Só ${(coverage*100).toFixed(0)}%)</span>`;
+                 playSfx('wrong');
+            }
+        }
+
+
+        // --- NEW MODES: SENTENCE ASSEMBLE ---
+        function startAssembleMode() {
+            state.sentencePool = [...(sentenceDatabase[currentVocabKey] || sentenceDatabase['duolingo'])].sort(()=>0.5-Math.random());
+            if(state.sentencePool.length === 0) { alert("Sem frases para este nível."); return; }
+            state.quizIndex = 0; state.sessionScore = 0; state.streak = 0; updateStats();
+            els.menu.style.display = 'none';
+            renderAssembleLevel();
+        }
+
+        function renderAssembleLevel() {
+            if(state.quizIndex >= state.sentencePool.length || state.quizIndex >= 5) { gameOver(true); return; } // Max 5 sentences per round
+            
+            state.currentSentence = state.sentencePool[state.quizIndex];
+            state.placedBlocks = [];
+            state.shuffledBlocks = [...state.currentSentence.blocks].sort(()=>0.5-Math.random());
+
+            els.game.innerHTML = `
+                <div class="assemble-container">
+                    <div class="assemble-prompt">Traduz: "${state.currentSentence.pt}"</div>
+                    <div class="assemble-area" id="drop-zone"></div>
+                    <div class="word-bank" id="word-bank">
+                        ${state.shuffledBlocks.map((block, i) => `
+                            <div class="word-chip" onclick="moveBlock(this, ${i})">
+                                <span class="chip-py">${block.p}</span>
+                                <span class="chip-zh">${block.z}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="check-btn" onclick="checkAssemble()">Verificar</button>
+                </div>
+            `;
+        }
+
+        function moveBlock(el, index) {
+            if(el.classList.contains('used')) return;
+            playSfx('flip');
+            el.classList.add('used');
+            const blockData = state.shuffledBlocks[index];
+            const dropZone = document.getElementById('drop-zone');
+            const newBlock = document.createElement('div');
+            newBlock.className = 'word-chip-placed';
+            newBlock.innerHTML = `<span class="chip-py">${blockData.p}</span><span class="chip-zh">${blockData.z}</span>`;
+            newBlock.onclick = () => {
+                dropZone.removeChild(newBlock);
+                el.classList.remove('used');
+                const removeIdx = state.placedBlocks.findIndex(b => b.z === blockData.z && b.p === blockData.p);
+                if (removeIdx > -1) state.placedBlocks.splice(removeIdx, 1);
+            };
+            dropZone.appendChild(newBlock);
+            state.placedBlocks.push(blockData);
+            speak(blockData.z, 'zh-CN');
+        }
+
+        function checkAssemble() {
+            const userSentence = state.placedBlocks.map(b => b.z).join('');
+            const isCorrect = state.currentSentence.valid.includes(userSentence);
+            if(isCorrect) {
+                playSfx('correct'); speak(userSentence, 'zh-CN');
+                state.streak++; updateScore(20 + (state.streak*5));
+                state.quizIndex++;
+                setTimeout(renderAssembleLevel, 1500);
+            } else {
+                playSfx('wrong'); state.streak = 0; updateScore(-5); updateStats();
+                const dropZone = document.getElementById('drop-zone');
+                dropZone.style.animation = 'shake 0.4s';
+                setTimeout(()=>dropZone.style.animation='', 400);
+            }
+        }
+
+        // --- NEW MODES: WRITE SENTENCE ---
+        function startWriteMode() {
+            state.sentencePool = [...(sentenceDatabase[currentVocabKey] || sentenceDatabase['duolingo'])].sort(()=>0.5-Math.random());
+            if(state.sentencePool.length === 0) { alert("Sem frases para este nível."); return; }
+            state.quizIndex = 0; state.sessionScore = 0; state.streak = 0; updateStats();
+            els.menu.style.display = 'none';
+            renderWriteLevel();
+        }
+
+        function renderWriteLevel() {
+            if(state.quizIndex >= state.sentencePool.length || state.quizIndex >= 5) { gameOver(true); return; }
+            state.currentSentence = state.sentencePool[state.quizIndex];
+            const keys = ['ā','á','ǎ','à','ē','é','ě','è','ī','í','ǐ','ì','ō','ó','ǒ','ò','ū','ú','ǔ','ù','ǖ','ǘ','ǚ','ǜ'];
+
+            els.game.innerHTML = `
+                <div class="write-container">
+                    <div class="assemble-prompt">Escreve em Mandarim:<br><b>"${state.currentSentence.pt}"</b></div>
+                    <textarea class="write-input" id="write-input" placeholder="Hanzi ou Pinyin..."></textarea>
+                    <div class="pinyin-keyboard">
+                        ${keys.map(k => `<button class="pinyin-key" onclick="insertChar('${k}')">${k}</button>`).join('')}
+                    </div>
+                    <div style="display:flex; gap:10px; justify-content:center">
+                        <button class="fc-giveup-btn" style="max-width:100px" onclick="speak('${state.currentSentence.valid[0]}', 'zh-CN')">👂 Ouvir</button>
+                        <button class="check-btn" onclick="checkWrite()">Verificar</button>
+                    </div>
+                    <div id="write-feedback" style="margin-top:10px; font-weight:bold"></div>
+                </div>
+            `;
+        }
+
+        function insertChar(char) {
+            const input = document.getElementById('write-input');
+            const start = input.selectionStart;
+            const end = input.selectionEnd;
+            const text = input.value;
+            input.value = text.substring(0, start) + char + text.substring(end);
+            input.selectionStart = input.selectionEnd = start + 1;
+            input.focus();
+        }
+
+        function checkWrite() {
+            const input = document.getElementById('write-input').value.trim();
+            const cleanInput = input.replace(/[.,?!。，？！]/g, '').toLowerCase();
+            const isCorrect = state.currentSentence.valid.some(valid => {
+                const cleanValid = valid.replace(/[.,?!。，？！]/g, '').toLowerCase();
+                return cleanInput === cleanValid;
+            });
+            const feedback = document.getElementById('write-feedback');
+            if(isCorrect) {
+                feedback.innerHTML = `<span style="color:var(--duo-green)">Correto!</span>`;
+                playSfx('correct'); state.streak++; updateScore(25 + (state.streak*5));
+                state.quizIndex++;
+                setTimeout(renderWriteLevel, 1500);
+            } else {
+                feedback.innerHTML = `<span style="color:var(--duo-red)">Errado. Solução: ${state.currentSentence.valid[0]}</span>`;
+                playSfx('wrong'); state.streak = 0; updateScore(-5); updateStats();
+            }
+        }
+
+        // --- NEW MODES: SPEECH ---
+        function startSpeechMode() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("O teu browser não suporta reconhecimento de voz (tenta Chrome ou Edge).");
+                return;
+            }
+            state.activeVocab = [...vocab].sort(() => 0.5 - Math.random()).slice(0, 10); // 10 words
+            state.quizIndex = 0; state.sessionScore = 0; state.streak = 0; updateStats();
+            state.recognition = new SpeechRecognition();
+            state.recognition.lang = 'zh-CN';
+            state.recognition.continuous = false;
+            state.recognition.interimResults = false;
+            state.recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                checkSpeech(transcript);
+                document.querySelector('.mic-btn').classList.remove('listening');
+            };
+            state.recognition.onerror = (event) => {
+                let msg = "Erro desconhecido.";
+                if(event.error === 'no-speech') msg = "Não detetei fala.";
+                if(event.error === 'audio-capture') msg = "Microfone não encontrado.";
+                if(event.error === 'not-allowed') msg = "Permissão de microfone negada.";
+                document.querySelector('.mic-btn').classList.remove('listening');
+                document.getElementById('speech-feedback').innerText = msg;
+            };
+            els.menu.style.display = 'none';
+            renderSpeechLevel();
+        }
+
+        function renderSpeechLevel() {
+            if(state.quizIndex >= state.activeVocab.length) { gameOver(true); return; }
+            const word = state.activeVocab[state.quizIndex];
+            els.game.innerHTML = `
+                <div class="speech-container">
+                    <div style="font-size:1.1rem; color:#888;">Lê em voz alta:</div>
+                    <div class="speech-target-zh" onclick="speak('${word.zh}', 'zh-CN')">${word.zh}</div>
+                    <div class="speech-target-py">${word.py}</div>
+                    <div class="speech-target-pt">${word.pt}</div>
+                    
+                    <button class="mic-btn" onclick="toggleMic()">🎙️</button>
+                    
+                    <div style="display:flex; gap:20px; justify-content:center; width:100%;">
+                        <button class="hanzi-tool-btn" onclick="speak('${word.zh}', 'zh-CN')">👂 Ouvir Exemplo</button>
+                        <button class="hanzi-tool-btn" onclick="skipSpeech()">⏭️ Saltar</button>
+                    </div>
+
+                    <div class="speech-feedback" id="speech-feedback">Clica para falar</div>
+                </div>
+            `;
+        }
+
+        function skipSpeech() {
+            try { state.recognition.stop(); } catch(e) {}
+            document.getElementById('speech-feedback').innerText = "Saltado.";
+            setTimeout(() => {
+                state.quizIndex++;
+                renderSpeechLevel();
+            }, 500);
+        }
+
+        function toggleMic() {
+            try { state.recognition.stop(); } catch(e) {}
+            try {
+                state.recognition.start();
+                document.querySelector('.mic-btn').classList.add('listening');
+                document.getElementById('speech-feedback').innerText = "A ouvir...";
+            } catch(e) {
+                 document.getElementById('speech-feedback').innerText = "Erro ao iniciar microfone.";
+            }
+        }
+
+        function checkSpeech(transcript) {
+            const target = state.activeVocab[state.quizIndex].zh;
+            const cleanTranscript = transcript.replace(/[.,?!。，？！]/g, '').trim();
+            if (cleanTranscript.includes(target) || target.includes(cleanTranscript)) {
+                document.getElementById('speech-feedback').innerHTML = `<span style="color:var(--duo-green)">Correto! (${cleanTranscript})</span>`;
+                playSfx('correct'); state.streak++; updateScore(20 + (state.streak*5));
+                state.quizIndex++; setTimeout(renderSpeechLevel, 1500);
+            } else {
+                document.getElementById('speech-feedback').innerHTML = `<span style="color:var(--duo-red)">Entendi: ${cleanTranscript}</span>`;
+                playSfx('wrong'); state.streak = 0; updateScore(-5); updateStats();
+            }
+        }
+
+        // --- ESTATÍSTICAS LOGIC ---
+        function openStatsScreen() {
+            els.menu.style.display = 'none';
+            els.stats.style.display = 'flex';
+            const allVocabPool = [
+                ...vocabDatabase.duolingo, ...vocabDatabase.hsk1, ...vocabDatabase.hsk2, ...vocabDatabase.hsk3
+            ].map(item => ({ zh: item[0], py: item[1], pt: item[2] }));
+
+            const entries = Object.entries(wordStats).map(([zh, stats]) => {
+                const total = stats.correct + stats.wrong;
+                const ratio = total === 0 ? 0 : (stats.correct / total);
+                const ref = allVocabPool.find(v => v.zh === zh) || { zh: zh, py: '?', pt: '?' };
+                return { ...ref, stats, ratio, total };
+            }).filter(x => x.total > 0);
+
+            const strong = entries.filter(e => e.ratio > 0.6).sort((a,b) => b.ratio - a.ratio || b.total - a.total).slice(0, 5);
+            const weak = entries.filter(e => e.ratio <= 0.6).sort((a,b) => a.ratio - b.ratio || b.total - a.total).slice(0, 5);
+            renderStatsList('strong-list', strong, 'strong');
+            renderStatsList('weak-list', weak, 'weak');
+        }
+
+        function renderStatsList(id, list, type) {
+            const container = document.getElementById(id);
+            container.innerHTML = '';
+            if(list.length === 0) { container.innerHTML = '<div style="color:#888; padding:10px">Sem dados suficientes ainda.</div>'; return; }
+            list.forEach(item => {
+                const pct = Math.round(item.ratio * 100);
+                const barColor = type === 'strong' ? 'var(--duo-green)' : 'var(--duo-red)';
+                const el = document.createElement('div');
+                el.className = `stat-item ${type}`;
+                el.innerHTML = `<div style="flex-grow:1"><div style="font-weight:bold">${item.zh} <span style="font-weight:normal; color:#666">(${item.py})</span></div><div style="font-size:0.9rem">${item.pt}</div></div><div style="text-align:right"><div style="font-weight:bold; color:${barColor}">${pct}%</div><div class="progress-bar-bg"><div class="progress-fill" style="width:${pct}%; background:${barColor}"></div></div></div>`;
+                container.appendChild(el);
+            });
+        }
+
+        // --- GUIA DE ESTUDO LOGIC ---
+        function openGuideScreen() { els.menu.style.display = 'none'; els.guide.style.display = 'flex'; filterGuide(''); }
+        function filterGuide(query) {
+            const container = document.getElementById('guide-list-container'); container.innerHTML = ''; const q = query.toLowerCase();
+            const filtered = vocab.filter(w => w.zh.includes(q) || w.py.toLowerCase().includes(q) || w.pt.toLowerCase().includes(q));
+            filtered.forEach(w => {
+                const item = document.createElement('div'); item.className = 'study-item'; item.style.justifyContent = 'flex-start'; item.style.gap = '15px'; item.onclick = () => speak(w.zh, 'zh-CN');
+                item.innerHTML = `<div style="font-size:1.5rem; font-weight:bold; color:var(--duo-text); min-width:60px">${w.zh}</div><div style="flex-grow:1"><div style="color:#888; font-size:0.9rem">${w.py}</div><div style="font-weight:bold; color:var(--duo-blue)">${w.pt}</div></div><div style="font-size:1.2rem">🔊</div>`;
+                container.appendChild(item);
+            });
+        }
+
+        // --- FLASHCARDS LOGIC REVISED ---
+        function openFlashcards() { els.menu.style.display = 'none'; els.flashcard.style.display = 'flex'; loadNextFlashcard(); }
+        function loadNextFlashcard() {
+            const area = document.getElementById('fc-area'); area.innerHTML = '';
+            let pool = studyList.length > 0 ? studyList : vocab;
+            if(pool.length === 0) { area.innerHTML = "<div style='text-align:center; padding:20px'>A lista está vazia.</div>"; return; }
+            state.currentFlashcard = pool[Math.floor(Math.random() * pool.length)];
+            const card = document.createElement('div'); card.className = 'flashcard-container';
+            card.innerHTML = `<div class="flashcard-inner" id="fc-inner"><div class="fc-face fc-front"><div><div class="fc-zh-main" onclick="speak('${state.currentFlashcard.zh}', 'zh-CN')">${state.currentFlashcard.zh}</div><div class="fc-py-main">${state.currentFlashcard.py}</div></div><input type="text" id="fc-user-input" class="fc-input" placeholder="Escreva o significado..." onkeydown="if(event.key==='Enter') checkFlashcard()"><div class="fc-buttons-row"><button class="fc-giveup-btn" onclick="giveUpFlashcard()">Não Sei</button><button class="fc-check-btn" onclick="checkFlashcard()">Verificar</button></div></div><div class="fc-face fc-back"><div class="fc-mini-header"><span class="fc-mini-zh">${state.currentFlashcard.zh}</span><span class="fc-mini-py">${state.currentFlashcard.py}</span></div><div class="fc-result-area"><div><div class="fc-label">Correto:</div><div class="fc-correct-ans">${state.currentFlashcard.pt}</div></div><div><div class="fc-label">A tua resposta:</div><div class="fc-user-ans" id="fc-user-display"></div></div></div><div class="fc-controls"><button class="fc-btn fc-dontknow" onclick="nextFlashcard(false)">Ainda não</button><button class="fc-btn fc-know" onclick="nextFlashcard(true)">Já Sei!</button></div></div></div>`;
+            area.appendChild(card);
+            setTimeout(() => { const input = document.getElementById('fc-user-input'); if(input) input.focus(); }, 100);
+        }
+        function checkFlashcard() {
+            const input = document.getElementById('fc-user-input').value; document.getElementById('fc-user-display').innerText = input || "(Vazio)";
+            document.getElementById('fc-inner').classList.add('flipped'); playSfx('flip'); speak(state.currentFlashcard.zh, 'zh-CN');
+        }
+        function giveUpFlashcard() {
+            document.getElementById('fc-user-display').innerHTML = "<span style='color:red'>Não sabia</span>"; document.getElementById('fc-inner').classList.add('flipped'); playSfx('wrong'); speak(state.currentFlashcard.zh, 'zh-CN'); updateScore(-2); 
+        }
+        function nextFlashcard(known) {
+            if(known) {
+                const idx = studyList.findIndex(w => w.zh === state.currentFlashcard.zh); if(idx > -1) { removeFromStudy(idx); }
+                trackWordResult(state.currentFlashcard, true); updateScore(5); playSfx('correct');
+            } else { addToStudy(state.currentFlashcard); trackWordResult(state.currentFlashcard, false); }
+            loadNextFlashcard();
+        }
+
+        // --- 8. ESTUDO/ERROS SCREEN ---
+        function openStudyScreen() { els.menu.style.display = 'none'; els.study.style.display = 'flex'; renderStudyList(); }
+        function renderStudyList() {
+            const container = document.getElementById('study-list-container'); const emptyMsg = document.getElementById('study-empty-msg'); container.innerHTML = '';
+            if (studyList.length === 0) { emptyMsg.style.display = 'block'; return; }
+            emptyMsg.style.display = 'none';
+            [...studyList].reverse().forEach((w, i) => {
+                const originalIndex = studyList.length - 1 - i; const item = document.createElement('div'); item.className = 'study-item';
+                item.innerHTML = `<div class="study-info" onclick="speak('${w.zh}', 'zh-CN')"><span style="font-size:1.2rem; font-weight:bold; color:var(--duo-text)">${w.zh}</span><span style="font-size:0.9rem; color:#888">${w.py}</span><span style="font-size:1rem; color:var(--duo-blue); font-weight:bold">${w.pt}</span></div><button class="trash-btn" onclick="removeFromStudy(${originalIndex})">🗑️</button>`;
+                container.appendChild(item);
+            });
+        }
+
+        // --- 9. GAMEPLAY LOGIC (MATCH & QUIZ) ---
+        function startGame(mode) {
+            state.isQuizMode = false;
+            let numPairs;
+            if (mode === 'easy') { numPairs = 8; state.penalty = 2; state.maxTime = 0; } 
+            else if (mode === 'normal') { numPairs = 10; state.penalty = 5; state.maxTime = 60; } 
+            else if (mode === 'hard') { numPairs = 12; state.penalty = 10; state.maxTime = 45; els.game.classList.add('hard-mode'); } 
+            else { els.game.classList.remove('hard-mode'); }
+            state.totalPairs = numPairs; state.sessionScore = 0; state.matchesFound = 0; state.streak = 0;
+            updateStats();
+            state.activeVocab = [...vocab].sort(() => 0.5 - Math.random()).slice(0, numPairs);
+            const leftSide = state.activeVocab.map((w, i) => ({...w, id: i, side: 'pt'})).sort(() => 0.5 - Math.random());
+            const rightSide = state.activeVocab.map((w, i) => ({...w, id: i, side: 'zh'})).sort(() => 0.5 - Math.random());
+            renderBoard(leftSide, rightSide);
+            els.menu.style.display = 'none';
+            if (state.maxTime > 0) { els.timerBox.style.display = 'block'; startTimer(state.maxTime); }
+        }
+
+        function startQuizMode() {
+            state.isQuizMode = true; state.sessionScore = 0; state.streak = 0; state.quizIndex = 0; updateStats();
+            const targets = [...vocab].sort(() => 0.5 - Math.random()).slice(0, 10);
+            state.quizQuestions = targets.map(target => {
+                const wrongs = [];
+                while(wrongs.length < 3) {
+                    const w = vocab[Math.floor(Math.random() * vocab.length)];
+                    if(w.zh !== target.zh && !wrongs.includes(w.pt)) wrongs.push(w.pt);
+                }
+                const opts = [target.pt, ...wrongs].sort(()=>0.5-Math.random());
+                return { q: `Como se diz "${target.zh}" (${target.py}) em Português?`, opts: opts, correct: opts.indexOf(target.pt), vocabRef: target };
+            });
+            els.menu.style.display = 'none'; els.game.classList.remove('hard-mode');
+            renderQuizQuestion();
+        }
+
+        // --- RENDERIZADORES DE JOGO ---
+        function renderBoard(leftCards, rightCards) {
+            els.game.innerHTML = `<div class="game-board"><div class="column" id="col-pt"><div class="column-title">Português</div></div><div class="column" id="col-zh"><div class="column-title">Mandarim</div></div></div>`;
+            const colPt = document.getElementById('col-pt'); const colZh = document.getElementById('col-zh');
+            leftCards.forEach(c => colPt.appendChild(createCard(c, 'pt')));
+            rightCards.forEach(c => colZh.appendChild(createCard(c, 'zh')));
+        }
+        function createCard(data, type) {
+            const el = document.createElement('div'); el.className = 'card';
+            el.innerHTML = type==='zh' ? `<span class="txt-py">${data.py}</span><span class="txt-zh">${data.zh}</span>` : `<span class="txt-pt">${data.pt}</span>`;
+            el.onclick = () => handleCardClick(el, data, type);
+            return el;
+        }
+        function renderQuizQuestion() {
+            if(state.quizIndex >= state.quizQuestions.length) { gameOver(true); return; }
+            const q = state.quizQuestions[state.quizIndex];
+            els.game.innerHTML = `<div class="quiz-container"><div class="quiz-question">${q.q}</div><div class="quiz-options">${q.opts.map((opt, i) => `<button class="quiz-btn" onclick="handleQuizAnswer(this, ${i})"><span>${opt}</span></button>`).join('')}</div></div>`;
+        }
+
+        // --- HANDLERS ---
+        function handleCardClick(el, data, type) {
+            if (state.isLocked || el.classList.contains('matched') || el.classList.contains('selected')) return;
+            speak(type === 'zh' ? data.zh : data.pt, type === 'zh' ? 'zh-CN' : 'pt-PT');
+            el.classList.add('selected');
+            if (!state.firstCard) { state.firstCard = { el, data, type }; } 
+            else {
+                state.isLocked = true; const secondCard = { el, data, type };
+                if (state.firstCard.type === secondCard.type) { state.firstCard.el.classList.remove('selected'); state.firstCard = secondCard; state.isLocked = false; return; }
+                if (state.firstCard.data.id === secondCard.data.id) handleMatch(state.firstCard, secondCard); else handleMismatch(state.firstCard, secondCard);
+            }
+        }
+        function handleMatch(c1, c2) {
+            state.matchesFound++; state.streak++;
+            updateScore(10 + (state.streak * 2)); updateStats();
+            trackWordResult(c1.data, true); 
+            playSfx('correct');
+            setTimeout(() => { c1.el.classList.remove('selected'); c2.el.classList.remove('selected'); c1.el.classList.add('matched'); c2.el.classList.add('matched'); state.firstCard = null; state.isLocked = false; if (state.matchesFound === state.totalPairs) gameOver(true); }, 300);
+        }
+        function handleMismatch(c1, c2) {
+            state.streak = 0; updateStats(); updateScore(-state.penalty);
+            const w1 = state.activeVocab[c1.data.id]; const w2 = state.activeVocab[c2.data.id];
+            if(w1) { addToStudy(w1); trackWordResult(w1, false); } 
+            if(w2) { addToStudy(w2); trackWordResult(w2, false); }
+            c1.el.classList.add('wrong'); c2.el.classList.add('wrong');
+            playSfx('wrong');
+            setTimeout(() => { c1.el.classList.remove('selected', 'wrong'); c2.el.classList.remove('selected', 'wrong'); state.firstCard = null; state.isLocked = false; }, 1000);
+        }
+        function handleQuizAnswer(btn, idx) {
+            if(state.isLocked) return; state.isLocked = true;
+            const q = state.quizQuestions[state.quizIndex];
+            if(idx === q.correct) {
+                btn.classList.add('correct'); state.streak++; updateScore(15 + (state.streak * 2)); speak("Correto!", "pt-PT");
+                trackWordResult(q.vocabRef, true); 
+                playSfx('correct');
+            } else {
+                btn.classList.add('wrong'); document.querySelectorAll('.quiz-btn')[q.correct].classList.add('correct');
+                state.streak = 0; updateScore(-5); speak("Errado.", "pt-PT");
+                addToStudy(q.vocabRef); trackWordResult(q.vocabRef, false); 
+                playSfx('wrong');
+            }
+            updateStats();
+            setTimeout(() => { state.quizIndex++; state.isLocked = false; renderQuizQuestion(); }, 1500);
+        }
+
+        // --- SISTEMA GLOBAL ---
+        function updateScore(amount) {
+            state.sessionScore = Math.max(0, state.sessionScore + amount);
+            totalXP = Math.max(0, totalXP + amount);
+            localStorage.setItem('mandarim_total_xp', totalXP);
+            
+            // Daily XP update
+            if(amount > 0) {
+                dailyXP += amount;
+                localStorage.setItem('mandarim_daily_xp', dailyXP);
+                checkDailyReset();
+            }
+
+            const anim = document.createElement('div'); anim.className = 'penalty-anim';
+            anim.innerText = amount > 0 ? `+${amount}` : `${amount}`;
+            anim.style.color = amount > 0 ? 'var(--duo-yellow)' : 'var(--duo-red)';
+            anim.style.left = '50%'; anim.style.top = '50%';
+            document.body.appendChild(anim); setTimeout(()=>anim.remove(), 1000);
+            els.xp.innerText = `💎 ${totalXP}`;
+        }
+        function updateStats() { els.streak.innerText = `🔥 ${state.streak}`; }
+        function startTimer(seconds) {
+            state.timeLeft = seconds; els.timerBar.style.width = '100%'; els.timerBar.classList.remove('critical');
+            state.timer = setInterval(() => {
+                state.timeLeft -= 0.1; const pct = (state.timeLeft / state.maxTime) * 100;
+                els.timerBar.style.width = `${pct}%`;
+                if (state.timeLeft <= 5) els.timerBar.classList.add('critical');
+                if (state.timeLeft <= 0) gameOver(false);
+            }, 100);
+        }
+        function gameOver(win) {
+            clearInterval(state.timer); state.isLocked = true;
+            if(win) fireConfetti(); // Trigger confetti
+            setTimeout(() => {
+                els.end.style.display = 'flex';
+                document.getElementById('end-emoji').innerText = win ? "🏆" : "⏰";
+                document.getElementById('end-title').innerText = win ? "Nível Completo!" : "Acabou o Tempo!";
+                document.getElementById('end-msg').innerText = `Ganhaste ${state.sessionScore} XP!`;
+                if(win) playSfx('win');
+                speak(win ? "Muito bem!" : "Que pena.", "pt-PT");
+                els.endTotal.innerText = `XP Total Acumulado: ${totalXP}`;
+            }, 500);
+        }
+        function speak(text, lang) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = lang; u.rate = 0.9;
+                const voices = window.speechSynthesis.getVoices();
+                if(lang === 'zh-CN') { const v = voices.find(x => x.lang.includes('zh')); if(v) u.voice = v; }
+                window.speechSynthesis.speak(u);
+            }
+        }
+
+        // --- CONFETTI SIMPLE ---
+        function fireConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            const particles = [];
+            const colors = ['#58cc02', '#1cb0f6', '#ffc800', '#ff4b4b', '#9b59b6'];
+            
+            for(let i=0; i<150; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    size: Math.random() * 8 + 4,
+                    speed: Math.random() * 5 + 2,
+                    angle: Math.random() * 2 * Math.PI
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                let active = false;
+                particles.forEach(p => {
+                    p.y += p.speed;
+                    p.x += Math.sin(p.angle) * 2;
+                    p.angle += 0.1;
+                    if(p.y < canvas.height) active = true;
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(p.x, p.y, p.size, p.size);
+                });
+                if(active) requestAnimationFrame(animate);
+                else ctx.clearRect(0,0,canvas.width,canvas.height);
+            }
+            animate();
+        }
+
+        window.speechSynthesis.getVoices();
+        goToMenu(); 
+    </script>
+</body>
+</html>
