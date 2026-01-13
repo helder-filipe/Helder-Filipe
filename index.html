@@ -1,0 +1,2338 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#58cc02">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/197/197626.png">
+
+    <title>Italiano Total - Pro</title>
+    <style>
+        /* --- ESTILOS MANTIDOS IGUAIS --- */
+        .hearts-display { color: #ff4b4b; cursor: pointer; transition: 0.2s; }
+        .hearts-display:active { transform: scale(1.2); }
+        .hearts-display.infinite { color: #ffc800; text-shadow: 0 0 5px #ffc800; }
+
+        .auth-box { 
+            background: white; padding: 30px; border-radius: 20px; 
+            width: 90%; max-width: 400px; text-align: center; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); 
+        }
+        .auth-tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #eee; }
+        .auth-tab { 
+            flex: 1; padding: 10px; border: none; background: none; 
+            font-weight: bold; color: #ccc; cursor: pointer; font-size: 1.1rem; 
+        }
+        .auth-tab.active { color: var(--duo-green); border-bottom: 3px solid var(--duo-green); }
+        .auth-input { 
+            width: 100%; padding: 15px; margin-bottom: 15px; 
+            border: 2px solid #eee; border-radius: 12px; font-size: 1rem; box-sizing: border-box; 
+        }
+        .auth-input:focus { border-color: var(--duo-green); outline: none; }
+        .auth-btn { 
+            width: 100%; padding: 15px; background: var(--duo-green); 
+            color: white; border: none; border-radius: 12px; 
+            font-size: 1.2rem; font-weight: bold; cursor: pointer; 
+            box-shadow: 0 4px 0 #46a302; 
+        }
+        .auth-btn:active { transform: translateY(4px); box-shadow: none; }
+
+        :root {
+            --duo-green: #58cc02; --duo-gray: #e5e5e5; --duo-text: #3c3c3c;
+            --duo-red: #ff4b4b; --duo-blue: #1cb0f6; --duo-yellow: #ffc800;
+            --duo-purple: #9b59b6; --duo-orange: #ff9600; --duo-teal: #2bcbba; --duo-pink: #fd79a8;
+            --bg-wrong: #ffe0e0;
+        }
+        body { font-family: 'Segoe UI', sans-serif; color: var(--duo-text); display: flex; flex-direction: column; height: 100vh; max-width: 900px; margin: 0 auto; background: #fff; overflow: hidden; user-select: none; touch-action: manipulation; }
+        
+        header { padding: 10px 20px; border-bottom: 2px solid var(--duo-gray); position: relative; background: white; z-index: 10; flex-shrink: 0; padding-top: env(safe-area-inset-top); }
+        .top-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .stats-container { display: flex; gap: 15px; font-weight: bold; font-size: 1.1rem; }
+        .xp-display { color: var(--duo-yellow); text-shadow: 1px 1px 0 #dceba6; } 
+        .streak-display { color: var(--duo-red); }
+        .timer-container { width: 100%; height: 8px; background: var(--duo-gray); border-radius: 4px; overflow: hidden; display: none; }
+        .timer-bar { height: 100%; background: var(--duo-blue); width: 100%; transition: width 1s linear; }
+        .timer-bar.critical { background: var(--duo-red); }
+
+        main { 
+            flex-grow: 1; padding: 10px; 
+            display: flex; flex-direction: column; 
+            width: 100%; box-sizing: border-box; 
+            overflow-y: auto; overflow-x: hidden;
+            position: relative; height: 100%; 
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        .game-board { display: flex; gap: 15px; width: 100%; height: 100%; }
+        .column { flex: 1; display: flex; flex-direction: column; gap: 8px; height: 100%; }
+        .column-title { text-align: center; font-weight: bold; color: #888; margin-bottom: 2px; text-transform: uppercase; font-size: 0.8rem; flex-shrink: 0; }
+        .card { 
+            border: 2px solid var(--duo-gray); border-radius: 12px; background: white; 
+            min-height: 50px; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            cursor: pointer; box-shadow: 0 3px 0 var(--duo-gray); text-align: center; 
+            user-select: none; transition: transform 0.1s, background 0.2s; position: relative;
+            touch-action: manipulation;
+        }
+        .card:active { transform: translateY(3px); box-shadow: none; }
+        .card.selected { border-color: var(--duo-blue); background-color: #ddf4ff; transform: translateY(3px); box-shadow: none; }
+        .card.matched { opacity: 0; pointer-events: none; transition: opacity 0.5s; }
+        .card.wrong { border-color: var(--duo-red); background-color: var(--duo-red); color: white; animation: shake 0.4s; }
+        .card.wrong .txt-py, .card.wrong .txt-zh { color: white; }
+
+        .hard-mode .game-board { overflow: hidden; }
+        .hard-mode .column { gap: 4px; }
+        .hard-mode .card { min-height: 0; flex: 1; padding: 0; border-radius: 8px; }
+        
+        .txt-zh { font-size: 1.1rem; font-weight: bold; line-height: 1.2; }
+        .txt-py { font-size: 0.75rem; color: #888; display: block; margin-bottom: 2px; font-style: italic; }
+        .txt-pt { font-size: 0.95rem; font-weight: bold; }
+
+        .quiz-container { max-width: 600px; margin: 0 auto; width: 100%; display: flex; flex-direction: column; gap: 20px; animation: slideIn 0.3s ease-out; }
+        .quiz-question { font-size: 1.4rem; text-align: center; font-weight: bold; padding: 30px; background: #f7f7f7; border: 2px solid var(--duo-gray); border-radius: 16px; color: var(--duo-text); }
+        .quiz-options { display: flex; flex-direction: column; gap: 12px; }
+        .quiz-btn { 
+            padding: 18px; font-size: 1.1rem; border: 2px solid var(--duo-gray); border-radius: 12px; background: white; 
+            cursor: pointer; text-align: left; box-shadow: 0 4px 0 var(--duo-gray); transition: 0.1s; display: flex; justify-content: space-between;
+        }
+        .quiz-btn:active { transform: translateY(4px); box-shadow: none; }
+        .quiz-btn:hover { background-color: #fcfcfc; border-color: var(--duo-blue); }
+        .quiz-btn.correct { background: #d7ffb8 !important; border-color: #58cc02 !important; color: #2a6600; pointer-events: none; }
+        .quiz-btn.wrong { background: #ffdfe0 !important; border-color: #ff4b4b !important; color: #a30000; pointer-events: none; }
+
+        .assemble-container { width: 100%; max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+        .assemble-prompt { font-size: 1.3rem; text-align: center; margin-bottom: 10px; color: #555; }
+        .assemble-area { 
+            min-height: 90px; border-bottom: 2px solid var(--duo-gray); border-top: 2px solid var(--duo-gray);
+            display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 10px; justify-content: center;
+            background: #fdfdfd; margin-bottom: 20px;
+        }
+        .word-bank { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding: 10px; }
+        .word-chip, .word-chip-placed {
+            background: white; border: 2px solid var(--duo-gray); border-radius: 12px; padding: 10px 15px; 
+            cursor: pointer; box-shadow: 0 4px 0 var(--duo-gray); user-select: none; transition: transform 0.1s;
+            display: flex; flex-direction: column; align-items: center; min-width: 40px; 
+        }
+        .chip-py { display:none; }
+        .chip-zh { font-size: 1.1rem; font-weight: bold; line-height: 1; }
+        .word-chip:active { transform: translateY(4px); box-shadow: none; }
+        .word-chip.used { opacity: 0; pointer-events: none; }
+        .word-chip-placed { border-color: var(--duo-blue); box-shadow: 0 4px 0 #1480b3; color: var(--duo-blue); }
+
+        .write-container { width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px; text-align: center; }
+        .write-input { width: 90%; padding: 15px; font-size: 1.2rem; border: 2px solid var(--duo-gray); border-radius: 12px; outline: none; background: #f9f9f9; resize: none; height: 80px; margin: 0 auto; }
+        .write-input:focus { border-color: var(--duo-blue); background: white; }
+
+        .cloze-container { width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; animation: slideIn 0.3s ease-out; text-align: center; }
+        .cloze-sentence { font-size: 1.6rem; color: var(--duo-text); line-height: 1.5; margin-bottom: 10px; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+        .cloze-blank { 
+            display: inline-block; min-width: 80px; border-bottom: 3px solid var(--duo-gray); 
+            color: var(--duo-blue); font-weight: bold; padding: 0 5px; vertical-align: bottom;
+        }
+        .cloze-context { color: #888; font-style: italic; font-size: 1rem; margin-bottom: 20px; }
+        .cloze-options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .cloze-btn { 
+            padding: 15px; font-size: 1.1rem; border: 2px solid var(--duo-gray); border-radius: 12px; 
+            background: white; cursor: pointer; box-shadow: 0 4px 0 var(--duo-gray); transition: 0.1s; font-weight: bold;
+        }
+        .cloze-btn:active { transform: translateY(4px); box-shadow: none; }
+        .cloze-btn.correct { background: #d7ffb8 !important; border-color: #58cc02 !important; color: #2a6600; pointer-events: none; }
+        .cloze-btn.wrong { background: #ffdfe0 !important; border-color: #ff4b4b !important; color: #a30000; pointer-events: none; }
+        .cloze-btn.disabled { opacity: 0.5; pointer-events: none; }
+        
+        .speech-container { width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center; padding-top: 20px; }
+        .speech-target-zh { font-size: 2.5rem; font-weight: bold; margin-bottom: 5px; color: var(--duo-text); }
+        .speech-target-py { font-size: 1.2rem; color: #888; font-style: italic; }
+        .speech-target-pt { font-size: 1.2rem; color: var(--duo-blue); font-weight: bold; margin-top: 10px; }
+        .mic-btn { width: 90px; height: 90px; border-radius: 50%; background: var(--duo-blue); border: none; color: white; font-size: 2.8rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); transition: 0.2s; display: flex; align-items: center; justify-content: center; margin: 20px auto; user-select: none; -webkit-tap-highlight-color: transparent; }
+        .mic-btn:active { transform: scale(0.95); }
+        .mic-btn.listening { background: var(--duo-red); animation: pulse 1.5s infinite; pointer-events: none; }
+        @keyframes pulse { 0% {box-shadow: 0 0 0 0 rgba(255, 75, 75, 0.7);} 70% {box-shadow: 0 0 0 20px rgba(255, 75, 75, 0);} 100% {box-shadow: 0 0 0 0 rgba(255, 75, 75, 0);} }
+        .speech-feedback { font-size: 1.1rem; min-height: 30px; font-weight: bold; color: #666; padding: 0 20px;}
+
+        .dictation-container { width: 100%; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center; animation: slideIn 0.3s ease-out; }
+        .dictation-controls { display: flex; gap: 20px; align-items: center; justify-content: center; margin-bottom: 10px; }
+        .dictation-btn-big { 
+            width: 80px; height: 80px; border-radius: 50%; background: var(--duo-blue); border: none; 
+            color: white; font-size: 2.5rem; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.2); 
+            transition: 0.1s; display: flex; align-items: center; justify-content: center;
+        }
+        .dictation-btn-big:active { transform: scale(0.95); box-shadow: none; }
+        .dictation-btn-small {
+            width: 50px; height: 50px; border-radius: 50%; background: #fff; border: 2px solid var(--duo-gray);
+            color: var(--duo-blue); font-size: 1.5rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
+        }
+        .dictation-hint { font-size: 0.9rem; color: #888; font-style: italic; margin-top: -10px; }
+        
+        .flashcard-container { perspective: 1000px; width: 320px; height: 450px; margin: 10px auto; }
+        .flashcard-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; border-radius: 20px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .flashcard-inner.flipped { transform: rotateY(180deg); }
+        .fc-face { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 20px; border: 2px solid var(--duo-gray); background: white; padding: 20px; box-sizing: border-box; }
+        .fc-front { color: var(--duo-text); justify-content: space-between; padding-top: 40px; padding-bottom: 40px; }
+        .fc-zh-main { font-size: 2.5rem; font-weight: bold; margin-bottom: 5px; }
+        .fc-py-main { font-size: 1.2rem; color: #888; margin-bottom: 30px; font-style: italic; }
+        .fc-input { width: 80%; padding: 12px; font-size: 1.1rem; border: 2px solid var(--duo-gray); border-radius: 10px; outline: none; text-align: center; background: #f9f9f9; }
+        .fc-input:focus { border-color: var(--duo-blue); background: white; }
+        .fc-buttons-row { display: flex; gap: 10px; justify-content: center; width: 90%; margin-top: 15px; }
+        .fc-check-btn { background: var(--duo-blue); color: white; border: none; padding: 12px 0; border-radius: 25px; font-size: 1rem; font-weight: bold; cursor: pointer; box-shadow: 0 3px 0 #1480b3; flex: 1; }
+        .fc-check-btn:active { transform: translateY(3px); box-shadow: none; }
+        .fc-giveup-btn { background: #95a5a6; color: white; border: none; padding: 12px 0; border-radius: 25px; font-size: 1rem; font-weight: bold; cursor: pointer; box-shadow: 0 3px 0 #7f8c8d; flex: 1; }
+        .fc-giveup-btn:active { transform: translateY(3px); box-shadow: none; }
+        .fc-back { transform: rotateY(180deg); background: #f0faff; justify-content: space-between; padding-top: 20px; padding-bottom: 30px; }
+        .fc-mini-header { background: white; border: 1px solid var(--duo-gray); border-radius: 10px; padding: 8px 15px; margin-bottom: 10px; display: flex; flex-direction: column; align-items: center; width: 80%; box-shadow: 0 2px 0 rgba(0,0,0,0.05); }
+        .fc-mini-zh { font-size: 1.5rem; font-weight: bold; color: #333; }
+        .fc-mini-py { font-size: 0.9rem; color: #888; }
+        .fc-result-area { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; width: 100%; gap: 15px; }
+        .fc-label { font-size: 0.8rem; text-transform: uppercase; color: #888; font-weight: bold; letter-spacing: 1px; }
+        .fc-correct-ans { font-size: 1.8rem; font-weight: bold; color: var(--duo-green); }
+        .fc-user-ans { font-size: 1.1rem; color: var(--duo-text); }
+        .fc-user-ans span { font-weight: bold; color: var(--duo-blue); }
+        .fc-controls { display: flex; gap: 15px; justify-content: center; width: 100%; }
+        .fc-btn { padding: 12px 20px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; font-size: 0.9rem; box-shadow: 0 3px 0 rgba(0,0,0,0.1); flex: 1; max-width: 120px; }
+        .fc-btn:active { transform: translateY(3px); box-shadow: none; }
+        .fc-know { background: var(--duo-green); color: white; }
+        .fc-dontknow { background: var(--duo-red); color: white; }
+
+        .stat-section { margin-bottom: 20px; width: 100%; max-width: 600px; }
+        .stat-header { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; display: flex; align-items: center; gap: 10px; }
+        .stat-list { display: flex; flex-direction: column; gap: 8px; }
+        .stat-item { display: flex; justify-content: space-between; padding: 10px; background: #f9f9f9; border-radius: 8px; border-left: 5px solid #ccc; }
+        .stat-item.strong { border-left-color: var(--duo-green); }
+        .stat-item.weak { border-left-color: var(--duo-red); }
+        .progress-bar-bg { width: 100px; height: 8px; background: #eee; border-radius: 4px; overflow: hidden; margin-top: 5px; }
+        .progress-fill { height: 100%; background: #ccc; }
+        .guide-search { width: 100%; padding: 15px; font-size: 1rem; border: 2px solid var(--duo-gray); border-radius: 12px; margin-bottom: 20px; max-width: 600px; }
+
+        .screen-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 50; 
+            padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; 
+            justify-content: flex-start; overflow-y: auto; -webkit-overflow-scrolling: touch;
+        }
+        
+        .menu-title { font-size: 1.8rem; font-weight: bold; color: var(--duo-green); margin-bottom: 10px; margin-top: 10px; }
+        .total-score-display { font-size: 1.2rem; font-weight: bold; color: var(--duo-yellow); margin-bottom: 10px; background: #fff8e1; padding: 5px 15px; border-radius: 20px; border: 2px solid var(--duo-yellow); }
+        .menu-logo { width: 90px; height: 90px; object-fit: cover; border-radius: 20px; margin-bottom: 5px; margin-top: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 3px solid var(--duo-green); }
+        .vocab-select-container { width: 100%; max-width: 600px; margin-bottom: 15px; }
+        .vocab-select { width: 100%; padding: 12px; border-radius: 12px; border: 2px solid var(--duo-gray); font-size: 1rem; font-weight: bold; color: var(--duo-text); outline: none; background: #fff; }
+        .vocab-select:focus { border-color: var(--duo-blue); }
+
+        .mode-select { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%; max-width: 600px; }
+        .mode-btn { 
+            padding: 15px; border: 2px solid var(--duo-gray); border-radius: 16px; background: white; 
+            text-align: center; cursor: pointer; transition: 0.2s; box-shadow: 0 4px 0 #ccc; position: relative;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .mode-btn:hover { transform: translateY(-2px); border-color: var(--duo-blue); }
+        .mode-btn:active { transform: translateY(2px); box-shadow: none; }
+        .mode-title { font-weight: bold; font-size: 1.1rem; display: block; margin-bottom: 5px; }
+        .mode-desc { font-size: 0.85rem; color: #666; }
+
+        .study-btn-container { margin-top: 20px; width: 100%; max-width: 600px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 30px; }
+        .study-btn-container .mode-btn { background: #f8f9fa; }
+        .badge { background: var(--duo-red); color: white; border-radius: 50%; padding: 2px 8px; font-size: 0.9rem; position: absolute; right: 10px; top: 10px; font-weight: bold; box-shadow: 0 2px 0 rgba(0,0,0,0.2); }
+
+        @media (min-width: 600px) { .mode-select, .study-btn-container { grid-template-columns: repeat(3, 1fr); } }
+
+        .daily-goal-container { width: 100%; max-width: 600px; margin-bottom: 20px; text-align: left; }
+        .daily-label { font-size: 0.9rem; color: #777; font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between;}
+        .daily-bar-bg { width: 100%; height: 12px; background: #eee; border-radius: 6px; overflow: hidden; }
+        .daily-bar-fill { height: 100%; background: var(--duo-yellow); width: 0%; transition: width 0.5s; }
+
+        .study-list { width: 100%; max-width: 600px; display: flex; flex-direction: column; gap: 10px; margin-top: 20px; margin-bottom: 50px; }
+        .study-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border: 2px solid var(--duo-gray); border-radius: 12px; background: #f9f9f9; }
+        .trash-btn { background: none; border: none; font-size: 1.2rem; cursor: pointer; opacity: 0.5; padding: 10px; }
+        .trash-btn:hover { opacity: 1; transform: scale(1.1); color: var(--duo-red); }
+        #confetti-canvas { position: absolute; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 100; }
+        @keyframes shake { 0%,100% {transform:translateX(0);} 25% {transform:translateX(-5px);} 75% {transform:translateX(5px);} }
+        @keyframes flashRed { 0% {background-color: var(--bg-wrong);} 100% {background-color: white;} }
+        @keyframes slideIn { from {opacity:0; transform:translateY(20px);} to {opacity:1; transform:translateY(0);} }
+        .penalty-anim { position: absolute; color: var(--duo-red); font-weight: bold; font-size: 1.5rem; animation: floatUp 1s forwards; pointer-events: none; z-index: 100;}
+        @keyframes floatUp { 0% {opacity:1; transform:translate(-50%, 0);} 100% {opacity:0; transform:translate(-50%, -50px);} }
+        .check-btn { width: 100%; max-width: 200px; padding: 15px; background: var(--duo-green); color: white; border: none; border-radius: 25px; font-size: 1.1rem; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #46a302; margin-top: 20px; }
+        .check-btn:active { transform: translateY(4px); box-shadow: none; }
+        .check-btn.disabled { background: #ccc; box-shadow: none; cursor: default; }
+
+        @media (max-height: 800px) {
+            .menu-logo { width: 70px; height: 70px; margin-top: 5px; }
+            .menu-title { font-size: 1.4rem; margin-top: 5px; margin-bottom: 5px; }
+            .total-score-display { margin-bottom: 5px; padding: 2px 10px; font-size: 0.9rem; }
+            .daily-goal-container { margin-bottom: 10px; }
+            .vocab-select-container { margin-bottom: 10px; }
+            .mode-select { gap: 5px; }
+            .mode-btn { padding: 10px; }
+            .mode-desc { display: none; }
+            .study-btn-container { margin-top: 10px; }
+        }
+
+        /* --- Novo CSS para os Flashcards --- */
+        .fc-input-guess {
+            width: 80%;
+            padding: 10px;
+            margin-top: 15px;
+            border: 2px solid var(--duo-gray);
+            border-radius: 12px;
+            font-size: 1.1rem;
+            text-align: center;
+            outline: none;
+        }
+        .fc-input-guess:focus {
+            border-color: var(--duo-blue);
+            background: #f0faff;
+        }
+        .fc-feedback-msg {
+            margin-top: 10px;
+            font-weight: bold;
+            min-height: 24px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="top-row">
+            <div style="font-size:24px; cursor:pointer" onclick="logout()">🚪</div>
+            <div class="stats-container">
+                <div class="hearts-display" id="hearts-el" onclick="buyProDemo()">❤️❤️❤️❤️❤️</div>
+                <div class="streak-display" id="streak-el">🔥 0</div>
+                <div class="xp-display" id="xp-el">💎 0</div>
+            </div>
+        </div>
+        <div class="timer-container" id="timer-box">
+            <div class="timer-bar" id="timer-bar"></div>
+        </div>
+    </header>
+
+    <main id="game-area"></main>
+
+    <div class="screen-overlay center-content" id="auth-screen" style="display:flex; z-index: 200; background: var(--duo-green);">
+        <div class="auth-box">
+            <h1 style="color:white; margin-bottom: 20px;">Benvenuto! 🇮🇹</h1>
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuth('login')">Entrar</button>
+                <button class="auth-tab" onclick="switchAuth('register')">Registar</button>
+            </div>
+            <input type="text" id="auth-user" class="auth-input" placeholder="Nome de Utilizador">
+            <input type="password" id="auth-pass" class="auth-input" placeholder="Palavra-passe">
+            <button class="auth-btn" onclick="handleAuth()">Vamos!</button>
+            <p id="auth-msg" style="color:white; margin-top:10px; font-weight:bold; min-height:20px;"></p>
+        </div>
+    </div>
+
+    <div class="screen-overlay center-content" id="menu-screen">
+        <img src="https://cdn-icons-png.flaticon.com/512/197/197626.png" alt="Italiano Logo" class="menu-logo">
+        <div class="menu-title">Italiano Total</div>
+        <div id="profile-section" style="text-align: center; margin-bottom: 15px;">
+            <h3 id="menu-username" style="margin: 0; color: var(--duo-text);">Olá!</h3>
+            <div id="menu-hearts" class="hearts-display" style="font-size: 1.5rem; margin-top: 5px;" onclick="buyProDemo()">❤️❤️❤️❤️❤️</div>
+            <div style="font-size: 0.8rem; color: #888; margin-bottom: 8px;" id="pro-status-label">Modo Gratuito</div>
+            
+            <div style="display:flex; gap:10px; justify-content:center; margin-top:5px">
+                <button onclick="toggleTestPro()" style="background: #333; color: #ffc800; border: none; padding: 8px 15px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; font-weight: bold; box-shadow: 0 2px 0 black;">
+                    🛠️ Testar Modo PRO
+                </button>
+                <button onclick="logout()" style="background: #ff4b4b; color: white; border: none; padding: 8px 15px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; font-weight: bold; box-shadow: 0 2px 0 #c0392b;">
+                    🚪 Sair
+                </button>
+            </div>
+        </div>
+        <div class="total-score-display" id="menu-total-score">💎 Total XP: 0</div>
+        <div class="daily-goal-container">
+            <div class="daily-label"><span>Meta Diária</span> <span id="daily-text">0 / 100 XP</span></div>
+            <div class="daily-bar-bg"><div class="daily-bar-fill" id="daily-bar"></div></div>
+        </div>
+       <div class="vocab-select-container">
+            <select id="vocab-select" class="vocab-select" onchange="changeVocab(this.value)">
+                <option value="basico_e_expressoes" selected>📚 Vocabulário: Básico</option>
+                <option value="comida_e_bebida">🍕 Vocabulário: Comida</option>
+                <option value="viagem_e_cidade">✈️ Vocabulário: Viagem</option>
+                <option value="corpo_e_saude">💪 Vocabulário: Corpo & Saúde</option>
+                <option value="casa_e_objetos">🏠 Vocabulário: Casa & Roupa</option>
+                <option value="natureza_e_animais">🌳 Vocabulário: Natureza & Animais</option>
+                <option value="verbos_e_acoes">🏃 Vocabulário: Verbos</option>
+                <option value="pessoas_e_familia">🧑‍🤝‍🧑 Vocabulário: Pessoas & Família</option>
+                <option value="adjetivos_e_descricoes">😀 Vocabulário: Adjetivos & Descrições</option>
+                <option value="tempo_e_numeros">⌚ Vocabulário: Tempo & Números</option>
+                <option value="roupa_e_acessorios">👚 Vocabulário: Roupa & Acessórios</option>
+                <option value="abstrato_sociedade_e_outros">🖼️ Vocabulário: Abstrato & Sociedade</option>
+                <option value="expressoes">💬 Expressões Idiomáticas (Limpo)</option>
+                <option value="giria_e_palavroes">🔞 Gíria e Palavrões</option>
+            </select>
+        </div>
+        <div class="mode-select">
+            <button class="mode-btn" onclick="startGame('easy')"><span class="mode-title">🍵 Zen (Fácil)</span><span class="mode-desc">Sem tempo. 8 Pares.</span></button>
+            <button class="mode-btn" onclick="startGame('normal')"><span class="mode-title">⏱️ Normal</span><span class="mode-desc">Contra o relógio. 10 Pares.</span></button>
+            <button class="mode-btn" onclick="startGame('hard')" style="border-color: #ff9600;"><span class="mode-title">🥋 Mestre (Difícil)</span><span class="mode-desc">Tempo curto. 12 Pares.</span></button>
+            <button class="mode-btn" onclick="startQuizMode()" style="border-color: var(--duo-purple);"><span class="mode-title" style="color: var(--duo-purple);">❓ Quiz Rápido</span><span class="mode-desc">10 Perguntas.</span></button>
+            <button class="mode-btn" onclick="startAssembleMode()" style="border-color: var(--duo-blue);"><span class="mode-title" style="color: var(--duo-blue);">🧩 Montar Frases</span><span class="mode-desc">Ordena as palavras.</span></button>
+            <button class="mode-btn" onclick="startWriteMode()" style="border-color: var(--duo-orange);"><span class="mode-title" style="color: var(--duo-orange);">✍️ Escrever Frases</span><span class="mode-desc">Digita a tradução.</span></button>
+            <button class="mode-btn" onclick="startFillBlankMode()" style="border-color: #2bcbba;"><span class="mode-title" style="color: #2bcbba;">📝 Completar</span><span class="mode-desc">Preenche a lacuna.</span></button>
+            <button class="mode-btn" onclick="startDictationMode()" style="border-color: #e84393;"><span class="mode-title" style="color: #e84393;">🎧 Ditado</span><span class="mode-desc">Ouve e escreve.</span></button>
+            <button class="mode-btn" onclick="startSpeechMode()" style="border-color: var(--duo-teal);"><span class="mode-title" style="color: var(--duo-teal);">🎙️ Pronúncia</span><span class="mode-desc">Fala para treinar.</span></button>
+             <button class="mode-btn" onclick="openFlashcards()" style="background: #e0f7fa; border-color: var(--duo-blue);"><span class="mode-title">🗂️ Flashcards</span><span class="mode-desc">Memória e Estudo.</span></button>
+        </div>
+        <div class="study-btn-container">
+            <button class="mode-btn" onclick="openStudyScreen()" style="background: #fff8e1; border-color: var(--duo-yellow);"><span class="mode-title">📚 Erros</span><span class="mode-desc">Rever falhas.</span><span class="badge" id="study-badge" style="display:none">0</span></button>
+            <button class="mode-btn" onclick="openStatsScreen()"><span class="mode-title">📊 Estatísticas</span><span class="mode-desc">Pontos Fortes.</span></button>
+            <button class="mode-btn" onclick="openGuideScreen()"><span class="mode-title">📖 Dicionário</span><span class="mode-desc">Guia Completo.</span></button>
+        </div>
+    </div>
+
+    <div class="screen-overlay" id="study-screen" style="display:none; align-items: center; justify-content: start;">
+        <h2 style="margin-top: 20px; color: var(--duo-text);">Caderno de Erros</h2>
+        <p id="study-empty-msg" style="color:#888; display:none">Não tens erros guardados. Bravo!</p>
+        <div class="study-list" id="study-list-container"></div>
+        <button class="mode-btn" style="margin-top:20px; text-align:center; width: auto;" onclick="goToMenu()">Voltar ao Menu</button>
+    </div>
+
+    <div class="screen-overlay" id="flashcard-screen" style="display:none; align-items: center; justify-content: center;">
+        <h2 style="margin-bottom: 5px;">Flashcards</h2>
+        <p style="color:#777; margin-bottom:10px; font-size:0.9rem">Tenta adivinhar o significado.</p>
+        <div id="fc-area"></div>
+        <button class="trash-btn" style="margin-top:20px; opacity: 1; color: var(--duo-blue); font-weight:bold" onclick="goToMenu()">Sair dos Flashcards</button>
+    </div>
+
+    <div class="screen-overlay" id="stats-screen" style="display:none; align-items: center; justify-content: start;">
+        <h2 style="margin-top: 20px;">O Teu Progresso</h2>
+        <div class="stat-section"><div class="stat-header">💪 Pontos Fortes <span style="font-size:0.8rem; color:#777">(>60% Acerto)</span></div><div class="stat-list" id="strong-list"></div></div>
+        <div class="stat-section"><div class="stat-header">🌱 Áreas a Melhorar <span style="font-size:0.8rem; color:#777">(≤60% Acerto)</span></div><div class="stat-list" id="weak-list"></div></div>
+        <button class="mode-btn" style="margin-top:20px; text-align:center; width: auto;" onclick="goToMenu()">Voltar ao Menu</button>
+    </div>
+
+    <div class="screen-overlay" id="guide-screen" style="display:none; align-items: center; justify-content: start;">
+        <h2 style="margin-top: 20px;">Dicionário Italiano</h2>
+        <input type="text" class="guide-search" placeholder="Pesquisar (Português ou Italiano)..." oninput="filterGuide(this.value)">
+        <div class="study-list" id="guide-list-container"></div>
+        <button class="mode-btn" style="margin-top:20px; text-align:center; width: auto;" onclick="goToMenu()">Voltar ao Menu</button>
+    </div>
+
+    <div class="screen-overlay center-content" id="end-screen" style="display:none;">
+        <canvas id="confetti-canvas"></canvas>
+        <h1 id="end-emoji" style="font-size: 5rem; margin: 0; z-index:101; position:relative">🏆</h1>
+        <h2 id="end-title" style="z-index:101; position:relative">Fim de Jogo!</h2>
+        <p id="end-msg" style="color: #777; font-size: 1.2rem; z-index:101; position:relative"></p>
+        <p style="font-size: 1rem; color: var(--duo-yellow); font-weight:bold; margin-top:5px; z-index:101; position:relative" id="end-total-xp"></p>
+        <button class="mode-btn" style="text-align:center; background:var(--duo-green); color:white; border:none; margin-top:20px; z-index:101; position:relative" onclick="location.reload()">Jogar Novamente</button>
+    </div>
+
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let italianVoice = null;
+        let voicesLoaded = false;
+
+        function loadVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            italianVoice = voices.find(voice => voice.lang === 'it-IT' && voice.name.includes('Google')) || voices.find(voice => voice.lang === 'it-IT');
+            voicesLoaded = true;
+        }
+        if ('speechSynthesis' in window) { window.speechSynthesis.onvoiceschanged = loadVoices; loadVoices(); }
+
+        function playSfx(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume(); 
+            const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+            osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+            if (type === 'correct') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(1000, now + 0.1);
+                gainNode.gain.setValueAtTime(0.1, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(100, now + 0.2);
+                gainNode.gain.setValueAtTime(0.1, now); gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'win') {
+                playTone(523.25, 0, 0.2); playTone(659.25, 0.2, 0.2); playTone(783.99, 0.4, 0.4);
+            } else if (type === 'flip') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(300, now);
+                gainNode.gain.setValueAtTime(0.05, now); gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            }
+        }
+        function playTone(freq, startTime, duration) {
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.frequency.value = freq; gain.gain.setValueAtTime(0.1, audioCtx.currentTime + startTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + startTime + duration);
+            osc.start(audioCtx.currentTime + startTime); osc.stop(audioCtx.currentTime + startTime + duration);
+        }
+        function speak(text, lang='it-IT') {
+            if (!('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel(); 
+            const u = new SpeechSynthesisUtterance(text);
+            u.lang = lang; u.rate = 0.9; u.pitch = 1;
+            if (lang === 'it-IT') { if (!italianVoice) loadVoices(); if (italianVoice) u.voice = italianVoice; }
+            window.speechSynthesis.speak(u);
+        }
+
+        // --- VOCAB DATABASE ---
+        const vocabDatabase = {
+            basico_e_expressoes: [
+                ["Ciao", "tchao", "Olá/Adeus"],
+                ["Grazie", "grá-tzie", "Obrigado"],
+                ["Prego", "", "De nada"],
+                ["Per favore", "", "Por favor"],
+                ["Sì", "", "Sim"],
+                ["No", "", "Não"],
+                ["Adesso", "", "Agora"],
+                ["Oggi", "o-dji", "Hoje"],
+                ["Domani", "", "Amanhã"],
+                ["Ieri", "", "Ontem"],
+                ["Sempre", "", "Sempre"],
+                ["Mai", "", "Nunca"],
+                ["Forse", "", "Talvez"],
+                ["Anche", "an-ke", "Também"],
+                ["Molto", "", "Muito"],
+                ["Tutto", "", "Tudo"],
+                ["Niente", "", "Nada"],
+                ["Chi?", "ki", "Quem?"],
+                ["Cosa?", "", "O quê?"],
+                ["Dove?", "", "Onde?"],
+                ["Quando?", "", "Quando?"],
+                ["Perché?", "per-ké", "Porquê?"],
+                ["Magari", "", "Quem dera/Talvez"],
+                ["Boh", "", "Não sei (expressão)"],
+                ["Dai", "", "Vá lá!"],
+                ["Figurati", "", "Imagina/De nada"],
+                ["Mica", "", "Não (enfático)"],
+                ["Cioè", "", "Isto é/Ou seja"],
+                ["Insomma", "", "Em suma/Bem"],
+                ["Allora", "", "Então"],
+                ["Comunque", "", "De qualquer forma"],
+                ["Appunto", "", "Exatamente"],
+                ["Sul serio?", "", "A sério?"],
+                ["Meno male", "", "Ainda bem"],
+                ["In bocca al lupo", "", "Boa sorte"],
+                ["Auguri", "", "Parabéns/Felicidades"],
+                ["Buon appetito", "", "Bom apetite"],
+                ["Benvenuto", "", "Bem-vindo"],
+                ["Mi dispiace", "", "Lamento/Desculpa"],
+                ["Scusa/Scusate", "", "Desculpa/Desculpem"],
+                ["Permesso", "", "Com licença"],
+                ["Piacere", "", "Prazer"],
+                ["Ecco", "", "Aqui está/Eis"],
+                ["Basta", "", "Chega"],
+                ["Zitto", "", "Cala-te"],
+                ["Aiuto", "", "Ajuda"],
+                ["Piano", "", "Devagar/Baixo/Plano"],
+                ["Vaffanculo", "", "Vai levar no cu"],
+                ["Che peccato", "", "Que pena"],
+                ["Andiamo", "", "Vamos"],
+                ["D'accordo", "", "De acordo"]
+            ],
+
+            comida_e_bebida: [
+                ["Cibo", "", "Comida"],
+                ["Colazione", "", "Pequeno-almoço"],
+                ["Pranzo", "", "Almoço"],
+                ["Cena", "", "Jantar"],
+                ["Merenda", "", "Lanche"],
+                ["Guanciale", "", "Papada de porco"],
+                ["Pancetta", "", "Bacon"],
+                ["Uova", "", "Ovos"],
+                ["Tuorli", "", "Gemas"],
+                ["Albumi", "", "Claras"],
+                ["Sughino", "", "Molho"],
+                ["Aceto", "", "Vinagre"],
+                ["Olio", "", "Azeite/Óleo"],
+                ["Sale", "", "Sal"],
+                ["Pepe", "", "Pimenta"],
+                ["Zucchero", "", "Açúcar"],
+                ["Farina", "", "Farinha"],
+                ["Burro", "", "Manteiga"],
+                ["Marmellata", "", "Compota"],
+                ["Miele", "", "Mel"],
+                ["Pane", "", "Pão"],
+                ["Panino", "", "Sandes"],
+                ["Ciabatta", "", "Pão ciabatta"],
+                ["Fetta", "", "Fatia"],
+                ["Trancio", "", "Fatia (pizza/peixe)"],
+                ["Formaggio", "", "Queijo"],
+                ["Prosciutto", "", "Presunto"],
+                ["Salame", "", "Salame"],
+                ["Salsiccia", "", "Salsicha"],
+                ["Manzo", "", "Carne de vaca"],
+                ["Maiale", "", "Porco"],
+                ["Pollo", "", "Frango"],
+                ["Tacchino", "", "Peru"],
+                ["Bistecca", "", "Bife"],
+                ["Pesce", "", "Peixe"],
+                ["Tonno", "", "Atum"],
+                ["Salmone", "", "Salmão"],
+                ["Polpo", "", "Polvo"],
+                ["Gamberetto", "", "Camarão"],
+                ["Aragosta", "", "Lagosta"],
+                ["Cozza", "", "Mexilhão"],
+                ["Vongola", "", "Amêijoa"],
+                ["Calamaro", "", "Lula"],
+                ["Granchio", "", "Caranguejo"],
+                ["Pasta", "", "Massa"],
+                ["Riso", "", "Arroz"],
+                ["Zuppa", "", "Sopa"],
+                ["Insalata", "", "Salada"],
+                ["Verdura", "", "Legumes"],
+                ["Pomodoro", "", "Tomate"],
+                ["Patata", "", "Batata"],
+                ["Cipolla", "", "Cebola"],
+                ["Aglio", "", "Alho"],
+                ["Carota", "", "Cenoura"],
+                ["Sedano", "", "Aipo"],
+                ["Cetriolo", "", "Pepino"],
+                ["Melanzana", "", "Beringela"],
+                ["Zucchina", "", "Curgete"],
+                ["Peperoni", "", "Pimentos"],
+                ["Fagiolo", "", "Feijão"],
+                ["Piselli", "", "Ervilhas"],
+                ["Funghi", "", "Cogumelos"],
+                ["Carciofo", "", "Alcachofra"],
+                ["Broccolo", "", "Brócolos"],
+                ["Cavolfiore", "", "Couve-flor"],
+                ["Cavolo", "", "Couve"],
+                ["Lattuga", "", "Alface"],
+                ["Zucca", "", "Abóbora"],
+                ["Mais", "", "Milho"],
+                ["Barbabietola", "", "Beterraba"],
+                ["Frutta", "", "Fruta"],
+                ["Mela", "", "Maçã"],
+                ["Banana", "", "Banana"],
+                ["Arancia", "", "Laranja"],
+                ["Limone", "", "Limão"],
+                ["Fragola", "", "Morango"],
+                ["Uva", "", "Uva"],
+                ["Pesca", "", "Pêssego"],
+                ["Melone", "", "Melão"],
+                ["Anguria/Cocomero", "", "Melancia"],
+                ["Nocciola", "", "Avelã"],
+                ["Pistacchio", "", "Pistáchio"],
+                ["Dolce", "", "Doce/Sobremesa"],
+                ["Gelato", "", "Gelado"],
+                ["Cioccolato", "", "Chocolate"],
+                ["Biscotto", "", "Bolacha"],
+                ["Torta", "", "Bolo"],
+                ["Caramella", "", "Rebuçado"],
+                ["Acqua", "", "Água"],
+                ["Vino", "", "Vinho"],
+                ["Birra", "", "Cerveja"],
+                ["Succo", "", "Sumo"],
+                ["Bibita", "", "Refrigerante"],
+                ["Caffè", "", "Café"],
+                ["Latte", "", "Leite"],
+                ["Tè", "", "Chá"]
+            ],
+
+            corpo_e_saude: [
+                ["Corpo", "", "Corpo"],
+                ["Testa", "", "Cabeça"],
+                ["Faccia/Viso", "", "Cara/Rosto"],
+                ["Capelli", "", "Cabelo"],
+                ["Fronte", "", "Testa"],
+                ["Occhi", "", "Olhos"],
+                ["Naso", "", "Nariz"],
+                ["Orecchio", "", "Orelha"],
+                ["Bocca", "", "Boca"],
+                ["Labbra", "", "Lábios"],
+                ["Denti", "", "Dentes"],
+                ["Lingua", "", "Língua"],
+                ["Mento", "", "Queixo"],
+                ["Guancia", "", "Bochecha"],
+                ["Collo", "", "Pescoço"],
+                ["Spalla", "", "Ombro"],
+                ["Petto", "", "Peito"],
+                ["Schiena", "", "Costas"],
+                ["Pancia", "", "Barriga"],
+                ["Stomaco", "", "Estômago"],
+                ["Braccio", "", "Braço"],
+                ["Gomito", "", "Cotovelo"],
+                ["Mano", "", "Mão"],
+                ["Dito", "", "Dedo"],
+                ["Unghia", "", "Unha"],
+                ["Gamba", "", "Perna"],
+                ["Ginocchio", "", "Joelho"],
+                ["Caviglia", "", "Tornozelo"],
+                ["Piede", "", "Pé"],
+                ["Cuore", "", "Coração"],
+                ["Sangue", "", "Sangue"],
+                ["Cervello", "", "Cérebro"],
+                ["Pelle", "", "Pele"],
+                ["Osso", "", "Osso"],
+                ["Muscolo", "", "Músculo"],
+                ["Salute", "", "Saúde"],
+                ["Malattia", "", "Doença"],
+                ["Dolore", "", "Dor"],
+                ["Febbre", "", "Febre"],
+                ["Raffreddore", "", "Constipação"],
+                ["Tosse", "", "Tosse"],
+                ["Starnuto", "", "Espirro"],
+                ["Vomito", "", "Vómito"],
+                ["Ferita", "", "Ferida"],
+                ["Sangue", "", "Sangue"],
+                ["Ospedale", "", "Hospital"],
+                ["Medico/Dottore", "", "Médico"],
+                ["Infermiera", "", "Enfermeira"],
+                ["Farmacia", "", "Farmácia"],
+                ["Medicina", "", "Remédio"],
+                ["Cerotto", "", "Penso"],
+                ["Ambulanza", "", "Ambulância"],
+                ["Incinta", "", "Grávida"],
+                ["Stanco", "", "Cansado"],
+                ["Malato", "", "Doente"]
+            ],
+
+            casa_e_objetos: [
+                ["Casa", "", "Casa"],
+                ["Appartamento", "", "Apartamento"],
+                ["Stanza", "", "Divisão/Quarto"],
+                ["Cucina", "", "Cozinha"],
+                ["Bagno", "", "Casa de banho"],
+                ["Camera da letto", "", "Quarto"],
+                ["Soggiorno/Salotto", "", "Sala de estar"],
+                ["Sala da pranzo", "", "Sala de jantar"],
+                ["Corridoio", "", "Corredor"],
+                ["Balcone", "", "Varanda"],
+                ["Giardino", "", "Jardim"],
+                ["Garage", "", "Garagem"],
+                ["Cantina", "", "Cave/Adega"],
+                ["Soffitta", "", "Sótão"],
+                ["Tetto", "", "Telhado"],
+                ["Pavimento", "", "Chão"],
+                ["Muro/Parete", "", "Parede"],
+                ["Finestra", "", "Janela"],
+                ["Porta", "", "Porta"],
+                ["Chiave", "", "Chave"],
+                ["Mobili", "", "Móveis"],
+                ["Tavolo", "", "Mesa"],
+                ["Sedia", "", "Cadeira"],
+                ["Divano", "", "Sofá"],
+                ["Poltrona", "", "Poltrona"],
+                ["Letto", "", "Cama"],
+                ["Armadio", "", "Roupeiro"],
+                ["Comodino", "", "Mesa de cabeceira"],
+                ["Lampada", "", "Candeeiro"],
+                ["Specchio", "", "Espelho"],
+                ["Tappeto", "", "Tapete"],
+                ["Tenda", "", "Cortina"],
+                ["Quadro", "", "Quadro"],
+                ["Orologio", "", "Relógio"],
+                ["Televisione", "", "Televisão"],
+                ["Computer", "", "Computador"],
+                ["Telefono", "", "Telefone"],
+                ["Frigorifero", "", "Frigorífico"],
+                ["Forno", "", "Forno"],
+                ["Fornello", "", "Fogão"],
+                ["Microonde", "", "Microondas"],
+                ["Lavastoviglie", "", "Máquina de lavar loiça"],
+                ["Lavatrice", "", "Máquina de lavar roupa"],
+                ["Aspirapolvere", "", "Aspirador"],
+                ["Ferro da stiro", "", "Ferro de engomar"],
+                ["Pentola", "", "Panela"],
+                ["Padella", "", "Frigideira"],
+                ["Piatto", "", "Prato"],
+                ["Bicchiere", "", "Copo"],
+                ["Tazza", "", "Chávena"],
+                ["Posate", "", "Talheres"],
+                ["Coltello", "", "Faca"],
+                ["Forchetta", "", "Garfo"],
+                ["Cucchiaio", "", "Colher"],
+                ["Tovagliolo", "", "Guardanapo"],
+                ["Asciugamano", "", "Toalha"],
+                ["Sapone", "", "Sabonete"],
+                ["Dentifricio", "", "Pasta de dentes"],
+                ["Spazzolino", "", "Escova de dentes"],
+                ["Carta igienica", "", "Papel higiénico"],
+                ["Lenzuola", "", "Lençóis"],
+                ["Cuscino", "", "Almofada"],
+                ["Coperta", "", "Cobertor"]
+            ],
+
+            natureza_e_animais: [
+                ["Natura", "", "Natureza"],
+                ["Albero", "", "Árvore"],
+                ["Fiore", "", "Flor"],
+                ["Erba", "", "Relva"],
+                ["Pianta", "", "Planta"],
+                ["Foresta/Bosco", "", "Floresta/Bosque"],
+                ["Montagna", "", "Montanha"],
+                ["Collina", "", "Colina"],
+                ["Mare", "", "Mar"],
+                ["Spiaggia", "", "Praia"],
+                ["Lago", "", "Lago"],
+                ["Fiume", "", "Rio"],
+                ["Cielo", "", "Céu"],
+                ["Sole", "", "Sol"],
+                ["Luna", "", "Lua"],
+                ["Stella", "", "Estrela"],
+                ["Nuvola", "", "Nuvem"],
+                ["Pioggia", "", "Chuva"],
+                ["Neve", "", "Neve"],
+                ["Vento", "", "Vento"],
+                ["Nebbia", "", "Nevoeiro"],
+                ["Temporale", "", "Tempestade"],
+                ["Fulmine", "", "Relâmpago"],
+                ["Tuono", "", "Trovão"],
+                ["Arcobaleno", "", "Arco-íris"],
+                ["Fuoco", "", "Fogo"],
+                ["Acqua", "", "Água"],
+                ["Terra", "", "Terra"],
+                ["Animale", "", "Animal"],
+                ["Cane", "", "Cão"],
+                ["Gatto", "", "Gato"],
+                ["Uccello", "", "Pássaro"],
+                ["Pesce", "", "Peixe"],
+                ["Cavallo", "", "Cavalo"],
+                ["Mucca", "", "Vaca"],
+                ["Maiale", "", "Porco"],
+                ["Pecora", "", "Ovelha"],
+                ["Gallina", "", "Galinha"],
+                ["Gallo", "", "Galo"],
+                ["Coniglio", "", "Coelho"],
+                ["Topo", "", "Rato"],
+                ["Leone", "", "Leão"],
+                ["Tigre", "", "Tigre"],
+                ["Orso", "", "Urso"],
+                ["Lupo", "", "Lobo"],
+                ["Volpe", "", "Raposa"],
+                ["Elefante", "", "Elefante"],
+                ["Scimmia", "", "Macaco"],
+                ["Serpente", "", "Cobra"],
+                ["Ragno", "", "Aranha"],
+                ["Insetto", "", "Inseto"],
+                ["Farfalla", "", "Borboleta"],
+                ["Ape", "", "Abelha"],
+                ["Mosca", "", "Mosca"],
+                ["Zanzara", "", "Mosquito"],
+                ["Formica", "", "Formiga"]
+            ],
+
+            viagem_e_cidade: [
+                ["Città", "", "Cidade"],
+                ["Paese", "", "País/Aldeia"],
+                ["Centro", "", "Centro"],
+                ["Piazza", "", "Praça"],
+                ["Strada/Via", "", "Rua/Estrada"],
+                ["Incrocio", "", "Cruzamento"],
+                ["Semaforo", "", "Semáforo"],
+                ["Marciapiede", "", "Passeio"],
+                ["Parco", "", "Parque"],
+                ["Ponte", "", "Ponte"],
+                ["Monumento", "", "Monumento"],
+                ["Chiesa", "", "Igreja"],
+                ["Museo", "", "Museu"],
+                ["Teatro", "", "Teatro"],
+                ["Cinema", "", "Cinema"],
+                ["Ristorante", "", "Restaurante"],
+                ["Bar", "", "Café/Bar"],
+                ["Albergo/Hotel", "", "Hotel"],
+                ["Negozio", "", "Loja"],
+                ["Supermercato", "", "Supermercado"],
+                ["Mercato", "", "Mercado"],
+                ["Banca", "", "Banco"],
+                ["Posta", "", "Correios"],
+                ["Scuola", "", "Escola"],
+                ["Stazione", "", "Estação"],
+                ["Aeroporto", "", "Aeroporto"],
+                ["Porto", "", "Porto"],
+                ["Fermata", "", "Paragem"],
+                ["Treno", "", "Comboio"],
+                ["Autobus", "", "Autocarro"],
+                ["Metropolitana", "", "Metro"],
+                ["Tram", "", "Elétrico"],
+                ["Taxi", "", "Táxi"],
+                ["Macchina/Auto", "", "Carro"],
+                ["Bicicletta", "", "Bicicleta"],
+                ["Moto", "", "Mota"],
+                ["Aereo", "", "Avião"],
+                ["Nave", "", "Navio"],
+                ["Barca", "", "Barco"],
+                ["Biglietto", "", "Bilhete"],
+                ["Passaporto", "", "Passaporte"],
+                ["Valigia", "", "Mala de viagem"],
+                ["Viaggio", "", "Viagem"],
+                ["Turista", "", "Turista"],
+                ["Mappa", "", "Mapa"]
+            ],
+
+            pessoas_e_familia: [
+                ["Persona", "", "Pessoa"],
+                ["Uomo", "", "Homem"],
+                ["Donna", "", "Mulher"],
+                ["Bambino", "", "Menino/Criança"],
+                ["Bambina", "", "Menina"],
+                ["Ragazzo", "", "Rapaz"],
+                ["Ragazza", "", "Rapariga"],
+                ["Amico", "", "Amigo"],
+                ["Amica", "", "Amiga"],
+                ["Famiglia", "", "Família"],
+                ["Genitori", "", "Pais"],
+                ["Padre/Papà", "", "Pai"],
+                ["Madre/Mamma", "", "Mãe"],
+                ["Figlio", "", "Filho"],
+                ["Figlia", "", "Filha"],
+                ["Fratello", "", "Irmão"],
+                ["Sorella", "", "Irmã"],
+                ["Nonno", "", "Avô"],
+                ["Nonna", "", "Avó"],
+                ["Zio", "", "Tio"],
+                ["Zia", "", "Tia"],
+                ["Cugino", "", "Primo"],
+                ["Cugina", "", "Prima"],
+                ["Nipote", "", "Neto/Sobrinho"],
+                ["Marito", "", "Marido"],
+                ["Moglie", "", "Esposa"],
+                ["Fidanzato", "", "Namorado/Noivo"],
+                ["Fidanzata", "", "Namorada/Noiva"],
+                ["Sposo", "", "Noivo (no casamento)"],
+                ["Sposa", "", "Noiva (no casamento)"],
+                ["Collega", "", "Colega"],
+                ["Vicino", "", "Vizinho"],
+                ["Insegnante", "", "Professor"],
+                ["Studente", "", "Estudante"],
+                ["Dottore", "", "Doutor"],
+                ["Avvocato", "", "Advogado"],
+                ["Poliziotto", "", "Polícia"],
+                ["Cuoco", "", "Cozinheiro"],
+                ["Cameriere", "", "Empregado de mesa"],
+                ["Commesso", "", "Empregado de loja"],
+                ["Operaio", "", "Operário"],
+                ["Impiegado", "", "Empregado de escritório"],
+                ["Pensionato", "", "Reformado"]
+            ],
+
+            verbos_e_acoes: [
+                ["Essere", "", "Ser/Estar"],
+                ["Avere", "", "Ter"],
+                ["Fare", "", "Fazer"],
+                ["Andare", "", "Ir"],
+                ["Venire", "", "Vir"],
+                ["Dire", "", "Dizer"],
+                ["Parlare", "", "Falar"],
+                ["Sentire", "", "Ouvir/Sentir"],
+                ["Ascoltare", "", "Escutar"],
+                ["Vedere", "", "Ver"],
+                ["Guardare", "", "Olhar/Ver"],
+                ["Mangiare", "", "Comer"],
+                ["Bere", "", "Beber"],
+                ["Dormire", "", "Dormir"],
+                ["Svegliarsi", "", "Acordar"],
+                ["Alzarsi", "", "Levantar-se"],
+                ["Lavarsi", "", "Lavar-se"],
+                ["Vestirsi", "", "Vestir-se"],
+                ["Uscire", "", "Sair"],
+                ["Entrare", "", "Entrar"],
+                ["Tornare", "", "Voltar"],
+                ["Arrivare", "", "Chegar"],
+                ["Partire", "", "Partir"],
+                ["Prendere", "", "Apanhar/Pegar/Tomar"],
+                ["Mettere", "", "Pôr/Colocar"],
+                ["Togliere", "", "Tirar"],
+                ["Aprire", "", "Abrir"],
+                ["Chiudere", "", "Fechar"],
+                ["Accendere", "", "Ligar/Acender"],
+                ["Spegnere", "", "Desligar/Apagar"],
+                ["Lavorare", "", "Trabalhar"],
+                ["Studiare", "", "Estudar"],
+                ["Leggere", "", "Ler"],
+                ["Scrivere", "", "Escrever"],
+                ["Comprare", "", "Comprar"],
+                ["Vendere", "", "Vender"],
+                ["Pagare", "", "Pagar"],
+                ["Costare", "", "Custar"],
+                ["Volere", "", "Querer"],
+                ["Potere", "", "Poder"],
+                ["Dovere", "", "Dever/Ter de"],
+                ["Sapere", "", "Saber"],
+                ["Conoscere", "", "Conhecer"],
+                ["Capire", "", "Entender"],
+                ["Pensare", "", "Pensar"],
+                ["Credere", "", "Acreditar"],
+                ["Sperare", "", "Esperar (esperança)"],
+                ["Aspettare", "", "Esperar (tempo)"],
+                ["Amare", "", "Amar"],
+                ["Piacere", "", "Gostar"],
+                ["Chiedere", "", "Perguntar/Pedir"],
+                ["Rispondere", "", "Responder"],
+                ["Cercare", "", "Procurar"],
+                ["Trovare", "", "Encontrar"],
+                ["Lasciare", "", "Deixar"],
+                ["Restare/Rimanere", "", "Ficar"],
+                ["Vivere", "", "Viver"],
+                ["Morire", "", "Morrer"],
+                ["Nascere", "", "Nascer"],
+                ["Dare", "", "Dar"],
+                ["Portare", "", "Levar/Trazer"],
+                ["Aiutare", "", "Ajudar"],
+                ["Giocare", "", "Brincar/Jogar"],
+                ["Suonare", "", "Tocar (instrumento/campainha)"],
+                ["Ballare", "", "Dançar"],
+                ["Cantare", "", "Cantar"],
+                ["Correre", "", "Correr"],
+                ["Camminare", "", "Caminhar"],
+                ["Fermare", "", "Parar"],
+                ["Viaggiare", "", "Viajar"],
+                ["Guidare", "", "Conduzir"],
+                ["Volare", "", "Voar"],
+                ["Nuotare", "", "Nadar"],
+                ["Cucinare", "", "Cozinhar"],
+                ["Pulire", "", "Limpar"],
+                ["Rompere", "", "Partir/Quebrar"],
+                ["Aggiustare", "", "Arranjar/Consertar"],
+                ["Usare", "", "Usar"],
+                ["Cambiare", "", "Mudar"],
+                ["Ricordare", "", "Lembrar"],
+                ["Dimenticare", "", "Esquecer"],
+                ["Scaricare", "", "Descarregar/Download"],
+                ["Fidarsi", "", "Confiar"],
+                ["Svelare", "", "Revelar"],
+                ["Brontolare", "", "Resmungar"],
+                ["Scommettere", "", "Apostar"],
+                ["Smettere", "", "Parar/Desistir"],
+                ["Godere", "", "Desfrutar/Aproveitar"],
+                ["Noleggiare", "", "Alugar"],
+                ["Grattarsi", "", "Coçar-se"],
+                ["Approfondire", "", "Aprofundar"],
+                ["Affacciarsi", "", "Debruçar-se/Assomar"],
+                ["Stuzzicare", "", "Provocar/Picar"],
+                ["Spegnersi", "", "Apagar-se/Falecer"],
+                ["Arrangiarsi", "", "Arranjar-se/Desenrascar-se"],
+                ["Scoreggiare", "", "Dar um peido"],
+                ["Spostarsi", "", "Deslocar-se"],
+                ["Tirare", "", "Puxar"],
+                ["Spingere", "", "Empurrar"],
+                ["Subire", "", "Sofrer/Submeter-se"],
+                ["Valutare", "", "Avaliar"],
+                ["Dispiacersi", "", "Lamentar"],
+                ["Accorgersi", "", "Aperceber-se"],
+                ["Tradire", "", "Trair"],
+                ["Sfatare", "", "Desmistificar"],
+                ["Indovinare", "", "Adivinhar"],
+                ["Coinvolgere", "", "Envolver"],
+                ["Stravolgere", "", "Transtornar/Revolucionar"],
+                ["Scherzare", "", "Brincar"],
+                ["Accostare", "", "Encostar"],
+                ["Capitare", "", "Acontecer"],
+                ["Affittare", "", "Arrendar"],
+                ["Chiarirsi", "", "Esclarecer-se"],
+                ["Incuriosire", "", "Despertar curiosidade"],
+                ["Strofinare", "", "Esfregar"],
+                ["Accarezzare", "", "Acariciar"],
+                ["Premere", "", "Pressionar"],
+                ["Bussare", "", "Bater (à porta)"],
+                ["Schioccare", "", "Estalar"],
+                ["Staccare", "", "Desligar/Descolar"],
+                ["Assaporare", "", "Saborear"],
+                ["Pettinarsi", "", "Pentear-se"],
+                ["Truccarsi", "", "Maquilhar-se"],
+                ["Radersi", "", "Barbear-se"],
+                ["Gridare", "", "Gritar"],
+                ["Fischiare", "", "Assobiar"],
+                ["Soffiare", "", "Soprar"],
+                ["Tossire", "", "Tossir"],
+                ["Starnutire", "", "Espirrar"],
+                ["Sbadigliare", "", "Bocejar"],
+                ["Ruttare", "", "Arrotar"],
+                ["Russare", "", "Ressonar"],
+                ["Insistere", "", "Insistir"],
+                ["Ammettere", "", "Admitir"],
+                ["Tacere", "", "Calar-se"],
+                ["Impastare", "", "Amassar"],
+                ["Stendere", "", "Estender"],
+                ["Cuocere", "", "Cozer"],
+                ["Disprezzare", "", "Desprezar"],
+                ["Spogliarsi", "", "Despir-se"],
+                ["Inciampare", "", "Tropeçar"],
+                ["Scivolare", "", "Escorregar"]
+            ],
+
+            adjetivos_e_descricoes: [
+                ["Bello", "", "Bonito"],
+                ["Brutto", "", "Feio/Mau"],
+                ["Buono", "", "Bom"],
+                ["Cattivo", "", "Mau"],
+                ["Grande", "", "Grande"],
+                ["Piccolo", "", "Pequeno"],
+                ["Nuovo", "", "Novo"],
+                ["Vecchio", "", "Velho"],
+                ["Giovane", "", "Jovem"],
+                ["Anziano", "", "Idoso"],
+                ["Alto", "", "Alto"],
+                ["Basso", "", "Baixo"],
+                ["Lungo", "", "Comprido"],
+                ["Corto/Breve", "", "Curto"],
+                ["Largo", "", "Largo"],
+                ["Stretto", "", "Estreito/Apertado"],
+                ["Pesante", "", "Pesado"],
+                ["Leggero", "", "Leve"],
+                ["Duro", "", "Duro"],
+                ["Morbido", "", "Macio"],
+                ["Caldo", "", "Quente"],
+                ["Freddo", "", "Frio"],
+                ["Veloce", "", "Rápido"],
+                ["Lento", "", "Lento"],
+                ["Forte", "", "Forte"],
+                ["Debole", "", "Fraco"],
+                ["Ricco", "", "Rico"],
+                ["Povero", "", "Pobre"],
+                ["Costoso/Caro", "", "Caro"],
+                ["Economico", "", "Barato"],
+                ["Facile", "", "Fácil"],
+                ["Difficile", "", "Difícil"],
+                ["Pieno", "", "Cheio"],
+                ["Vuoto", "", "Vazio"],
+                ["Pulito", "", "Limpo"],
+                ["Sporco", "", "Sujo"],
+                ["Aperto", "", "Aberto"],
+                ["Chiuso", "", "Fechado"],
+                ["Libero", "", "Livre"],
+                ["Occupato", "", "Ocupado"],
+                ["Felice/Allegro", "", "Feliz/Alegre"],
+                ["Triste", "", "Triste"],
+                ["Arrabbiato", "", "Zangado"],
+                ["Stanco", "", "Cansado"],
+                ["Malato", "", "Doente"],
+                ["Pazzo/Matto", "", "Louco"],
+                ["Intelligente", "", "Inteligente"],
+                ["Stupido", "", "Estúpido"],
+                ["Simpatico", "", "Simpático"],
+                ["Antipatico", "", "Antipático"],
+                ["Gentile", "", "Gentil"],
+                ["Scortese", "", "Descortês"],
+                ["Bravo", "", "Bom/Habilidoso"],
+                ["Pigro", "", "Preguiçoso"],
+                ["Divertente", "", "Divertido"],
+                ["Noioso", "", "Aborrecido"],
+                ["Importante", "", "Importante"],
+                ["Giusto", "", "Justo/Certo"],
+                ["Sbagliato", "", "Errado"],
+                ["Vero", "", "Verdadeiro"],
+                ["Falso", "", "Falso"],
+                ["Possibile", "", "Possível"],
+                ["Impossibile", "", "Impossível"],
+                ["Uguale", "", "Igual"],
+                ["Diverso", "", "Diferente"],
+                ["Solo", "", "Só/Sozinho"],
+                ["Insieme", "", "Juntos"],
+                ["Pronto", "", "Pronto"],
+                ["Sicuro", "", "Seguro/Certo"],
+                ["Pericoloso", "", "Perigoso"],
+                ["Tipico", "", "Típico"],
+                ["Strano", "", "Estranho"],
+                ["Normale", "", "Normal"],
+                ["Speciale", "", "Especial"],
+                ["Unico", "", "Único"],
+                ["Intero", "", "Inteiro"],
+                ["Rotto", "", "Partido"],
+                ["Nudo", "", "Nu"],
+                ["Vestito", "", "Vestido"],
+                ["Bagnato", "", "Molhado"],
+                ["Asciutto", "", "Seco"],
+                ["Dolce", "", "Doce"],
+                ["Amaro", "", "Amargo"],
+                ["Salato", "", "Salgado"],
+                ["Piccante", "", "Picante"],
+                ["Fresco", "", "Fresco"],
+                ["Colorato", "", "Colorido"],
+                ["Buio", "", "Escuro"],
+                ["Chiaro/Luminoso", "", "Claro"],
+                ["Rumoroso", "", "Barulhento"],
+                ["Silenzioso", "", "Silencioso"],
+                ["Tranquillo", "", "Tranquilo"],
+                ["Calmo", "", "Calmo"],
+                ["Nervoso", "", "Nervoso"],
+                ["Geloso", "", "Ciumento"],
+                ["Invidioso", "", "Invejoso"],
+                ["Timido", "", "Tímido"],
+                ["Coraggioso", "", "Corajoso"],
+                ["Paurroso", "", "Medroso"],
+                ["Onesto", "", "Honesto"],
+                ["Sincero", "", "Sincero"],
+                ["Curioso", "", "Curioso"],
+                ["Attento", "", "Atento"],
+                ["Distratto", "", "Distraído"],
+                ["Educato", "", "Educado"],
+                ["Maleducato", "", "Mal-educado"],
+                ["Generoso", "", "Generoso"],
+                ["Tirchio/Avaro", "", "Avarento"],
+                ["Egoista", "", "Egoísta"],
+                ["Famoso", "", "Famoso"],
+                ["Sconosciuto", "", "Desconhecido"],
+                ["Pubblico", "", "Público"],
+                ["Privato", "", "Privado"],
+                ["Ufficiale", "", "Oficial"],
+                ["Nazionale", "", "Nacional"],
+                ["Internazionale", "", "Internacional"],
+                ["Straniero", "", "Estrangeiro"],
+                ["Locale", "", "Local"],
+                ["Moderno", "", "Moderno"],
+                ["Antico", "", "Antigo"],
+                ["Classico", "", "Clássico"],
+                ["Elegante", "", "Elegante"],
+                ["Sportivo", "", "Desportivo"],
+                ["Comodo", "", "Confortável"],
+                ["Scomodo", "", "Desconfortável"],
+                ["Utile", "", "Útil"],
+                ["Inutile", "", "Inútil"],
+                ["Necessario", "", "Necessário"],
+                ["Sufficiente", "", "Suficiente"],
+                ["Abbastanza", "", "Bastante"],
+                ["Troppo", "", "Demasiado"],
+                ["Poco", "", "Pouco"],
+                ["Tanto/Molto", "", "Muito"],
+                ["Parecchio", "", "Bastante/Muito"],
+                ["Qualsiasi", "", "Qualquer"],
+                ["Qualunque", "", "Qualquer"],
+                ["Ogni", "", "Cada/Todo"],
+                ["Tutto", "", "Todo/Tudo"],
+                ["Nessuno", "", "Nenhum/Ninguém"],
+                ["Qualche", "", "Algum"],
+                ["Alcuni", "", "Alguns"],
+                ["Altro", "", "Outro"],
+                ["Stesso", "", "Mesmo"],
+                ["Primo", "", "Primeiro"],
+                ["Ultimo", "", "Último"],
+                ["Prossimo", "", "Próximo"],
+                ["Precedente/Scorso", "", "Anterior/Passado"],
+                ["Attuale", "", "Atual"],
+                ["Assonnato", "", "Com sono"],
+                ["Sconvolto", "", "Chocado/Perturbado"],
+                ["Spartano", "", "Básico/Simples"],
+                ["Uggioso", "", "Sombrio (tempo)"],
+                ["Brontolone", "", "Resmungão"],
+                ["Svogliato", "", "Preguiçoso/Sem vontade"],
+                ["Traballante", "", "Vacilante"],
+                ["Raccapricciante", "", "Repugnante/Horrível"],
+                ["Presunto", "", "Presumível"],
+                ["Squisito", "", "Delicioso"],
+                ["Imbarazzato", "", "Envergonhado"],
+                ["Incinta", "", "Grávida"],
+                ["Sfigato", "", "Azarado/Perdedor (calão)"],
+                ["Imbecille", "", "Imbecil"],
+                ["Stronzo", "", "Idiota/Cabrão (ofensivo)"],
+                ["Pazzesco", "", "Louco/Incrível"],
+                ["Sfacciato", "", "Descarado"],
+                ["Mozzafiato", "", "De tirar o fôlego"],
+                ["Buffo", "", "Engraçado/Curioso"],
+                ["Scivoloso", "", "Escorregadio"],
+                ["Lusingato", "", "Lisonjeado"],
+                ["Cretino", "", "Cretino"],
+                ["Scocciatore", "", "Maçador"],
+                ["Rompiscatole", "", "Melga/Chato"],
+                ["Tirchio", "", "Forreta"],
+                ["Sottovalutato", "", "Subestimado"],
+                ["Pirla", "", "Idiota (calão milanês)"],
+                ["Babbeo", "", "Parvo"],
+                ["Imbranato", "", "Desajeitado"],
+                ["Rimbambito", "", "Gaga/Xéxé"],
+                ["Coinvolgente", "", "Envolvente"],
+                ["Ispiratore", "", "Inspirador"],
+                ["Amareggiato", "", "Amargurado"],
+                ["Ostico", "", "Difícil/Árduo"],
+                ["Lordo", "", "Bruto (peso/valor)"],
+                ["Spilorcio", "", "Pão-duro"],
+                ["Cialtrone", "", "Charlatão/Canalha"],
+                ["Eterogeneo", "", "Heterogéneo"],
+                ["Omogeneo", "", "Homogéneo"]
+            ],
+
+            tempo_e_numeros: [
+                ["Tempo", "", "Tempo"],
+                ["Ora", "", "Hora"],
+                ["Minuto", "", "Minuto"],
+                ["Secondo", "", "Segundo"],
+                ["Giorno", "", "Dia"],
+                ["Settimana", "", "Semana"],
+                ["Mese", "", "Mês"],
+                ["Anno", "", "Ano"],
+                ["Secolo", "", "Século"],
+                ["Mattina", "", "Manhã"],
+                ["Pomeriggio", "", "Tarde"],
+                ["Sera", "", "Noite (tarde/início da noite)"],
+                ["Notte", "", "Noite (para dormir)"],
+                ["Mezzogiorno", "", "Meio-dia"],
+                ["Mezzanotte", "", "Meia-noite"],
+                ["Oggi", "", "Hoje"],
+                ["Ieri", "", "Ontem"],
+                ["Domani", "", "Amanhã"],
+                ["Lunedì", "", "Segunda-feira"],
+                ["Martedì", "", "Terça-feira"],
+                ["Mercoledì", "", "Quarta-feira"],
+                ["Giovedì", "", "Quinta-feira"],
+                ["Venerdì", "", "Sexta-feira"],
+                ["Sabato", "", "Sábado"],
+                ["Domenica", "", "Domingo"],
+                ["Gennaio", "", "Janeiro"],
+                ["Febbraio", "", "Fevereiro"],
+                ["Marzo", "", "Março"],
+                ["Aprile", "", "Abril"],
+                ["Maggio", "", "Maio"],
+                ["Giugno", "", "Junho"],
+                ["Luglio", "", "Julho"],
+                ["Agosto", "", "Agosto"],
+                ["Settembre", "", "Setembro"],
+                ["Ottobre", "", "Outubro"],
+                ["Novembre", "", "Novembro"],
+                ["Dicembre", "", "Dezembro"],
+                ["Primavera", "", "Primavera"],
+                ["Estate", "", "Verão"],
+                ["Autunno", "", "Outono"],
+                ["Inverno", "", "Inverno"],
+                ["Numero", "", "Número"],
+                ["Zero", "", "Zero"],
+                ["Uno", "", "Um"],
+                ["Due", "", "Dois"],
+                ["Tre", "", "Três"],
+                ["Quattro", "", "Quatro"],
+                ["Cinque", "", "Cinco"],
+                ["Sei", "", "Seis"],
+                ["Sette", "", "Sete"],
+                ["Otto", "", "Oito"],
+                ["Nove", "", "Nove"],
+                ["Dieci", "", "Dez"],
+                ["Undici", "", "Onze"],
+                ["Dodici", "", "Doze"],
+                ["Tredici", "", "Treze"],
+                ["Quattordici", "", "Catorze"],
+                ["Quindici", "", "Quinze"],
+                ["Sedici", "", "Dezasseis"],
+                ["Diciassette", "", "Dezassete"],
+                ["Diciotto", "", "Dezoito"],
+                ["Diciannove", "", "Dezanove"],
+                ["Venti", "", "Vinte"],
+                ["Trenta", "", "Trinta"],
+                ["Quaranta", "", "Quarenta"],
+                ["Cinquanta", "", "Cinquenta"],
+                ["Sessanta", "", "Sessenta"],
+                ["Settanta", "", "Setenta"],
+                ["Ottanta", "", "Oitenta"],
+                ["Novanta", "", "Noventa"],
+                ["Cento", "", "Cem"],
+                ["Mille", "", "Mil"],
+                ["Milione", "", "Milhão"],
+                ["Miliardo", "", "Milhar de milhão"],
+                ["Metà", "", "Metade"],
+                ["Doppio", "", "Dobro"],
+                ["Paio", "", "Par"]
+            ],
+
+            roupa_e_acessorios: [
+                ["Vestito/Abito", "", "Vestido/Fato"],
+                ["Gonna", "", "Saia"],
+                ["Pantaloni", "", "Calças"],
+                ["Jeans", "", "Calças de ganga"],
+                ["Camicia", "", "Camisa"],
+                ["Maglietta", "", "T-shirt"],
+                ["Maglione", "", "Camisola de malha"],
+                ["Giacca", "", "Casaco"],
+                ["Cappotto", "", "Sobretudo"],
+                ["Impermeabile", "", "Impermeável"],
+                ["Scarpe", "", "Sapatos"],
+                ["Stivali", "", "Botas"],
+                ["Sandali", "", "Sandálias"],
+                ["Pantofole", "", "Chinelos de quarto"],
+                ["Calzini", "", "Meias"],
+                ["Calze", "", "Meias (compridas/collants)"],
+                ["Mutande", "", "Cuecas"],
+                ["Reggiseno", "", "Soutien"],
+                ["Costume da bagno", "", "Fato de banho"],
+                ["Pigiama", "", "Pijama"],
+                ["Cappello", "", "Chapéu"],
+                ["Berretto", "", "Gorro/Boné"],
+                ["Sciarpa", "", "Cachecol"],
+                ["Guanti", "", "Luvas"],
+                ["Cintura", "", "Cinto"],
+                ["Cravatta", "", "Gravata"],
+                ["Borsa", "", "Mala"],
+                ["Zaino", "", "Mochila"],
+                ["Valigia", "", "Mala de viagem"],
+                ["Ombrello", "", "Guarda-chuva"],
+                ["Occhiali", "", "Óculos"],
+                ["Occhiali da sole", "", "Óculos de sol"],
+                ["Orologio", "", "Relógio"],
+                ["Gioielli", "", "Joias"],
+                ["Collana", "", "Colar"],
+                ["Braccialetto", "", "Pulseira"],
+                ["Anello", "", "Anel"],
+                ["Orecchini", "", "Brincos"],
+                ["Tasca", "", "Bolso"],
+                ["Bottone", "", "Botão"],
+                ["Cerniera", "", "Fecho-éclair"],
+                ["Lana", "", "Lã"],
+                ["Cotone", "", "Algodão"],
+                ["Seta", "", "Seda"],
+                ["Pelle/Cuoio", "", "Pele/Couro"],
+                ["Taglia", "", "Tamanho"],
+                ["Moda", "", "Moda"],
+                ["Sfilata", "", "Desfile"]
+            ],
+
+            abstrato_sociedade_e_outros: [
+                ["Vita", "", "Vida"],
+                ["Morte", "", "Morte"],
+                ["Amore", "", "Amor"],
+                ["Odio", "", "Ódio"],
+                ["Pace", "", "Paz"],
+                ["Guerra", "", "Guerra"],
+                ["Libertà", "", "Liberdade"],
+                ["Giustizia", "", "Justiça"],
+                ["Legge", "", "Lei"],
+                ["Regola", "", "Regra"],
+                ["Politica", "", "Política"],
+                ["Governo", "", "Governo"],
+                ["Stato", "", "Estado"],
+                ["Partito", "", "Partido"],
+                ["Elezioni", "", "Eleições"],
+                ["Voto", "", "Voto"],
+                ["Presidente", "", "Presidente"],
+                ["Re", "", "Rei"],
+                ["Regina", "", "Rainha"],
+                ["Religione", "", "Religião"],
+                ["Dio", "", "Deus"],
+                ["Chiesa", "", "Igreja"],
+                ["Fede", "", "Fé"],
+                ["Speranza", "", "Esperança"],
+                ["Carità", "", "Caridade"],
+                ["Fortuna", "", "Sorte"],
+                ["Sfortuna", "", "Azar"],
+                ["Destino", "", "Destino"],
+                ["Caso", "", "Acaso"],
+                ["Problema", "", "Problema"],
+                ["Soluzione", "", "Solução"],
+                ["Domanda", "", "Pergunta"],
+                ["Risposta", "", "Resposta"],
+                ["Idea", "", "Ideia"],
+                ["Pensiero", "", "Pensamento"],
+                ["Sogno", "", "Sonho"],
+                ["Realtà", "", "Realidade"],
+                ["Verità", "", "Verdade"],
+                ["Bugia", "", "Mentira"],
+                ["Segreto", "", "Segredo"],
+                ["Novità", "", "Novidade"],
+                ["Notizia", "", "Notícia"],
+                ["Storia", "", "História"],
+                ["Arte", "", "Arte"],
+                ["Musica", "", "Música"],
+                ["Letteratura", "", "Literatura"],
+                ["Scienza", "", "Ciência"],
+                ["Tecnologia", "", "Tecnologia"],
+                ["Lavoro", "", "Trabalho"],
+                ["Studio", "", "Estudo"],
+                ["Sport", "", "Desporto"],
+                ["Gioco", "", "Jogo"],
+                ["Spettacolo", "", "Espetáculo"],
+                ["Cultura", "", "Cultura"],
+                ["Tradizione", "", "Tradição"],
+                ["Lingua", "", "Língua"],
+                ["Parola", "", "Palavra"],
+                ["Frase", "", "Frase"],
+                ["Significato", "", "Significado"],
+                ["Esempio", "", "Exemplo"],
+                ["Motivo", "", "Motivo"],
+                ["Causa", "", "Causa"],
+                ["Effetto", "", "Efeito"],
+                ["Risultato", "", "Resultado"],
+                ["Successo", "", "Sucesso"],
+                ["Fallimento", "", "Fracasso"],
+                ["Aiuto", "", "Ajuda"],
+                ["Consiglio", "", "Conselho"],
+                ["Ordine", "", "Ordem"],
+                ["Permesso", "", "Permissão"],
+                ["Divieto", "", "Proibição"],
+                ["Pericolo", "", "Perigo"],
+                ["Sicurezza", "", "Segurança"],
+                ["Paura", "", "Medo"],
+                ["Coraggio", "", "Coragem"],
+                ["Gioia", "", "Alegria"],
+                ["Dolore", "", "Dor/Pesar"],
+                ["Rabbia", "", "Raiva"],
+                ["Sorpresa", "", "Surpresa"],
+                ["Vergogna", "", "Vergonha"],
+                ["Colpa", "", "Culpa"],
+                ["Peccato", "", "Pecado/Pena"],
+                ["Errore/Sbaglio", "", "Erro"],
+                ["Dubbio", "", "Dúvida"],
+                ["Certezza", "", "Certeza"],
+                ["Possibilità", "", "Possibilidade"],
+                ["Occasione", "", "Ocasião/Oportunidade"],
+                ["Momento", "", "Momento"],
+                ["Periodo", "", "Período"],
+                ["Situazione", "", "Situação"],
+                ["Condizione", "", "Condição"],
+                ["Modo", "", "Modo/Maneira"],
+                ["Maniera", "", "Maneira"],
+                ["Tipo", "", "Tipo"],
+                ["Genere", "", "Género"],
+                ["Specie", "", "Espécie"],
+                ["Parte", "", "Parte"],
+                ["Pezzo", "", "Pedaço"],
+                ["Gruppo", "", "Grupo"],
+                ["Insieme", "", "Conjunto"],
+                ["Folla", "", "Multidão"],
+                ["Popolo", "", "Povo"],
+                ["Società", "", "Sociedade"],
+                ["Mondo", "", "Mundo"],
+                ["Universo", "", "Universo"],
+                ["Spazio", "", "Espaço"],
+                ["Natura", "", "Natureza"],
+                ["Ambiente", "", "Ambiente"],
+                ["Clima", "", "Clima"],
+                ["Sprezzatura", "", "Despreocupação estudada (arte de fazer parecer fácil)"],
+                ["Abbiocco", "", "Sonolência pós-refeição"],
+                ["Meriggiare", "", "Descansar à sombra ao meio-dia"],
+                ["Scaramanzia", "", "Superstição"],
+                ["Teoria del complotto", "", "Teoria da conspiração"],
+                ["Retroscena", "", "Bastidores/História de fundo"],
+                ["Fregatura", "", "Burlice/Engano"],
+                ["Baratto", "", "Troca/Escambo"],
+                ["Sovranismo", "", "Soberanismo"],
+                ["Sciopero", "", "Greve"]
+            ],
+
+            expressoes: [
+                ["Ci sto", "Conversação", "Alinho / Concordo"],
+                ["Ma dai!", "Exclamação", "Nem pensar! / Fala sério!"],
+                ["È pazzesco!", "Exclamação", "Que doidice! / É loucura!"],
+                ["Fammi pensare", "Conversação", "Deixa-me pensar"],
+                ["Non ne ho idea", "Conversação", "Não tenho ideia"],
+                ["Che c’è che non va?", "Pergunta", "O que há de errado?"],
+                ["Dici sul serio?", "Pergunta", "Estás a falar a sério!?"],
+                ["Non ci posso credere", "Reação", "Não posso acreditar"],
+                ["Tizio, Caio e Sempronio", "Expressão", "Fulano, Sicrano e Beltrano"],
+                ["Scatto una foto", "Ação", "Tiro uma foto"],
+                ["L'acqua di cottura", "Culinária", "A água da cozedura"],
+                ["Togliere le parole di bocca", "Idiomática", "Tirar as palavras da boca"],
+                ["Che fortuna", "Conversação", "Que sorte"],
+                ["Qualcosa del genere", "Conversação", "Qualquer coisa do género"],
+                ["In bocca al lupo", "Idiomática", "Boa sorte"],
+                ["Crepi il lupo", "Resposta", "Morte ao lobo (Obrigado)"],
+                ["Essere in alto mare", "Idiomática", "Estar em dificuldades / Longe do fim"],
+                ["Non avere peli sulla lingua", "Idiomática", "Não ter papas na língua"],
+                ["Avere le mani in pasta", "Idiomática", "Ter as mãos na massa"],
+                ["Fare il passo più lungo della gamba", "Idiomática", "Dar o passo maior que as pernas"],
+                ["Acqua in bocca!", "Idiomática", "Boca fechada! Segredo!"],
+                ["Avere il coltello dalla parte del manico", "Idiomática", "Ter a faca e o queijo na mão"],
+                ["Avere le mani bucate", "Idiomática", "Ser gastador (mãos furadas)"],
+                ["Prendere qualcosa con le pinze", "Idiomática", "Ter cautela / Aceitar com reservas"],
+                ["Essere al verde", "Idiomática", "Estar sem dinheiro"],
+                ["Andare in fumo", "Idiomática", "Fracassar / Dar errado"],
+                ["Perdere la testa", "Idiomática", "Perder a cabeça / Apaixonar-se"],
+                ["Cadere dalle nuvole", "Idiomática", "Cair das nuvens (surpreso)"],
+                ["Non vedere l’ora", "Expressão", "Estar ansioso / Não ver a hora"],
+                ["Molto buono", "Sentidos", "Muito bom (sabor/odor)"],
+                ["Buono come il pane", "Elogio", "Pessoa bondosa"],
+                ["Buono a nulla", "Crítica", "Não presta para nada"],
+                ["Avere il prosciutto sugli occhi", "Idiomática", "Não ver o óbvio"],
+                ["Essere come il prezzemolo", "Idiomática", "Estar em todo o lado"],
+                ["Essere alla frutta", "Idiomática", "Estar exausto / No fim"],
+                ["Avere sale in zucca", "Idiomática", "Ter juízo / Inteligência"],
+                ["Avere il pane ma non i denti", "Idiomática", "Ter oportunidade mas não meios"],
+                ["Dare i numeri", "Idiomática", "Dizer coisas sem sentido"],
+                ["Farsi in quattro", "Idiomática", "Desdobrar-se / Esforçar-se muito"],
+                ["Essere al settimo cielo", "Idiomática", "Estar no sétimo céu"],
+                ["Contare fino a dieci", "Conselho", "Acalmar-se"],
+                ["Fare due conti", "Economia", "Refletir antes de gastar"],
+                ["Non ho un soldo", "Conversação", "Não tenho dinheiro"],
+                ["Ce la puoi fare", "Incentivo", "Tu consegues"],
+                ["Non mollare mai", "Incentivo", "Nunca desistas"],
+                ["Mai dire mai", "Ditado", "Nunca digas nunca"],
+                ["Fidati di te stesso", "Conselho", "Acredita em ti próprio"],
+                ["Bando alle ciance", "Expressão", "Sem mais delongas"],
+                ["Rosso come un peperone", "Comparação", "Vermelho como um tomate"],
+                ["Piangere come una fontana", "Comparação", "Chorar baba e ranho"],
+                ["Fermo come una statua", "Comparação", "Parado como estátua"],
+                ["Leggero come una piuma", "Comparação", "Leve como uma pena"],
+                ["Dormire come un sasso", "Comparação", "Dormir como uma pedra"],
+                ["Muto come un pesce", "Comparação", "Mudo como um peixe"],
+                ["Sono negato nel ballo", "Conversação", "Sou mau a dançar"],
+                ["È una passeggiata", "Expressão", "É muito fácil / É canja"],
+                ["Siamo a cavallo", "Idiomática", "Estamos prontos / Conseguimos"],
+                ["Lasciarci la pelle", "Idiomática", "Morrer (numa tentativa)"],
+                ["Essere in buone mani", "Expressão", "Estar em boas mãos"],
+                ["Cambiare aria", "Expressão", "Mudar de ares / Ir embora"],
+                ["Prendere un granchio", "Idiomática", "Cometer um erro grave"],
+                ["Avere un diavolo per capello", "Idiomática", "Estar furioso"],
+                ["Non ci piove", "Idiomática", "Não há dúvida / É óbvio"],
+                ["Essere tutto d’un pezzo", "Elogio", "Ser íntegro / Coerente"],
+                ["Avere l’acquolina in bocca", "Expressão", "Ficar com água na boca"],
+                ["Finire a tarallucci e vino", "Idiomática", "Acabar em bem/pizza"],
+                ["Essere una buona forchetta", "Idiomática", "Comer bem / Bom garfo"],
+                ["Un sacco", "Quantidade", "Muito / Um monte"],
+                ["Benedica", "Religião", "Abençoada"],
+                ["Non ti allargare", "Aviso", "Não te estiques / Não abuses"],
+                ["A lungo andare", "Tempo", "Com o passar do tempo"],
+                ["Lo conosco come le mie tasche", "Idiomática", "Conheço como a palma da mão"],
+                ["Sputa il rospo", "Idiomática", "Desembucha (Diz logo)"],
+                ["Mi hai preso per il naso", "Idiomática", "Enganaste-me"],
+                ["Fatti i cavoli tuoi", "Expressão", "Mete-te na tua vida (suave)"],
+                ["Ho una fame da lupi", "Expressão", "Fome de lobo"],
+                ["Ci sta", "Conversação", "Faz sentido / Aceitável"],
+                ["Hai preso il toro per le corna", "Idiomática", "Agarraste o touro pelos cornos"],
+                ["Attaccarsi al tram", "Idiomática", "Temos pena / Aguenta-te"],
+                ["Mi prendi in giro", "Conversação", "Estás a gozar comigo"],
+                ["Volere è potere", "Ditado", "Querer é poder"],
+                ["Ma quando mai!", "Exclamação", "Nem pensar!"],
+                ["Come mai!?", "Pergunta", "Como assim!?"],
+                ["Non si sa mai!", "Expressão", "Nunca se sabe"],
+                ["Mai stato meglio!", "Conversação", "Nunca estive melhor"],
+                ["Non è mai troppo tardi!", "Ditado", "Nunca é tarde demais"],
+                ["Tanti auguri!", "Festa", "Parabéns!"],
+                ["Rompere il ghiaccio", "Idiomática", "Quebrar o gelo"],
+                ["Meglio un uovo oggi...", "Ditado", "Melhor um ovo hoje que galinha amanhã"],
+                ["Ci mancherebbe", "Cortesia", "Imagina / Sem problemas"],
+                ["Chi si loda s’imbroda", "Ditado", "Quem se gaba, atrapalha-se"],
+                ["Sei un pollo", "Gíria", "És um ingénuo"],
+                ["Che c’entra", "Conversação", "O que tem isso a ver?"],
+                ["Non fa una piega", "Expressão", "Faz todo o sentido"],
+                ["A occhio e croce", "Expressão", "Mais ou menos"],
+                ["Neanche per sogno!", "Exclamação", "Nem em sonhos!"],
+                ["A pelle!", "Sentimento", "Instintivamente"],
+                ["Te lo meriti", "Conversação", "Tu mereces"],
+                ["Fai come ti pare", "Conversação", "Faz como quiseres"],
+                ["Non lo reggo", "Expressão", "Não o suporto"],
+                ["A malapena", "Advérbio", "Mal / Quase não"],
+                ["Fattene una ragione", "Conselho", "Aceita que dói menos"],
+                ["Accidenti! / Mannaggia!", "Exclamação", "Caramba! / Poxa!"],
+                ["Porca miseria!", "Exclamação", "Porca miséria!"],
+                ["Uffa!", "Exclamação", "Que chatice! (suspiro)"],
+                ["Ho l’abbiocco", "Gíria", "Estou com sono (pós-comida)"],
+                ["Alla grande!", "Resposta", "Estou ótimo!"],
+                ["Una favola!", "Resposta", "Uma maravilha!"],
+                ["Cercare il pelo nell’uovo", "Idiomática", "Procurar defeitos (pelo no ovo)"],
+                ["Andare liscio come l’olio", "Idiomática", "Correr tudo bem (como azeite)"],
+                ["Cadere a fagiolo", "Idiomática", "Vir mesmo a calhar"],
+                ["Stai sereno / Tranquillo", "Conselho", "Tem calma"],
+                ["Fare centro", "Expressão", "Acertar no alvo"],
+                ["Fare il pesce morto", "Expressão", "Fazer-se de morto/maluco"],
+                ["È l’ultima spiaggia", "Idiomática", "É a última chance"],
+                ["Fare il tifo", "Desporto", "Torcer por alguém"],
+                ["Vai via / Sparisci", "Imperativo", "Vai embora / Desaparece"],
+                ["Curioso come una scimmia", "Comparação", "Curioso como um macaco"],
+                ["Testardo come un mulo", "Comparação", "Teimoso como uma mula"],
+                ["Lento come una lumaca", "Comparação", "Lento como um caracol"],
+                ["Tutto fumo e niente arrosto!", "Idiomática", "Muita parra e pouca uva"],
+                ["Mi sa", "Conversação", "Eu acho que / Parece-me"],
+                ["Stai scherzando!?", "Pergunta", "Estás a brincar!?"],
+                ["In fretta e furia", "Expressão", "À pressa"],
+                ["Piano piano", "Conselho", "Pouco a pouco / Devagar"],
+                ["Sto impazzendo!", "Expressão", "Estou a ficar maluco!"],
+                ["Sei in gamba", "Elogio", "És desenrascado / inteligente"],
+                ["A tavola non si invecchia mai!", "Ditado", "À mesa não se envelhece"],
+                ["L’appetito vien mangiando", "Ditado", "O apetite vem a comer"],
+                ["Ride bene chi ride ultimo", "Ditado", "Ri melhor quem ri por último"],
+                ["Meglio soli che male accompagnati", "Ditado", "Antes só que mal acompanhado"],
+                ["Patti chiari, amicizia lunga", "Ditado", "Amigos amigos, negócios à parte"],
+                ["Sono di fretta!", "Conversação", "Estou com pressa!"],
+                ["Costare un occhio della testa", "Idiomática", "Custar os olhos da cara"],
+                ["Ti voglio un sacco di bene!", "Afeto", "Gosto muito de ti!"],
+                ["Tutto fa brodo!", "Ditado", "Tudo ajuda!"],
+                ["Boh", "Gíria", "Sei lá / Não sei"],
+                ["Trovare un modo / cavarsela", "Ação", "Dar um jeito / Safar-se"],
+                ["Se mia nonna avesse le ruote...", "Piada", "Se a minha avó tivesse rodas..."],
+                ["O mangi questa minestra...", "Ditado", "É pegar ou largar"],
+                ["Chi va piano va sano e va lontano", "Ditado", "Quem espera sempre alcança"],
+                ["Stare con le mani in mano", "Idiomática", "Ficar de braços cruzados"],
+                ["Mandare a quel paese", "Eufemismo", "Mandar dar uma curva"],
+                ["Seduta stante", "Tempo", "Imediatamente"],
+                ["A caval donato non si guarda in bocca", "Ditado", "A cavalo dado não se olha o dente"],
+                ["Prendere due piccioni con una fava", "Idiomática", "Matar dois coelhos de uma vez"],
+                ["Mi scoccia", "Expressão", "Aborrece-me / Chateia-me"],
+                ["Avere la botte piena e la moglie ubriaca", "Ditado", "Querer sol na eira e chuva no nabal"],
+                ["Sei un pezzo di pane", "Elogio", "És um pão (pessoa muito boa)"],
+                ["Hai stoffa da vendere", "Elogio", "Tens muito talento/potencial"]
+            ],
+
+            giria_e_palavroes: [
+                ["Che culo", "Gíria", "Que sorte (lit: que cu)"],
+                ["Essere culo e camicia", "Gíria", "Serem unha e carne"],
+                ["Farsi un culo così", "Gíria", "Esforçar-se muito"],
+                ["Fare un culo così", "Gíria", "Dar uma surra"],
+                ["Restare col culo per terra", "Gíria", "Ficar sem dinheiro"],
+                ["Fare qualcosa col culo", "Gíria", "Fazer algo muito mal feito"],
+                ["Muovi il culo", "Vulgar", "Mexe-te / Despacha-te"],
+                ["Salvare il culo", "Gíria", "Salvar a pele"],
+                ["Che gnocca / Che figa", "Gíria", "Mulher atraente"],
+                ["Col cavolo!", "Exclamação", "Nem pensar! / Uma ova!"],
+                ["Me ne sbatto", "Gíria", "Lixo-me para isso"],
+                ["Me ne fotto", "Vulgar", "Estou-me a foder para isso"],
+                ["Ma che cazzo dici?", "Vulgar", "Mas que merda dizes?"],
+                ["Non rompere", "Gíria", "Não chateies"],
+                ["Che palle", "Gíria", "Que chatice / Que seca"],
+                ["Che figata!", "Gíria", "Que fixe! / Incrível!"],
+                ["Ma che cazzo fai!", "Vulgar", "Que caralho estás a fazer!"],
+                ["Fottitene!", "Vulgar", "Que se lixe!"],
+                ["È un casino!", "Gíria", "É uma confusão/caos!"],
+                ["Ma che ti frega!?", "Conversação", "Que te importa?"],
+                ["Non mi caga!", "Vulgar", "Não me liga nenhuma!"],
+                ["Ma vaffanbrodo", "Gíria", "Vai dar uma volta"],
+                ["Mi hai rotto le palle", "Vulgar", "Chateaste-me"],
+                ["Non capisco un’acca", "Expressão", "Não entendo nada"],
+                ["Minchia!", "Vulgar", "Porra! / Caramba!"],
+                ["Non capisco un tubo", "Gíria", "Não entendo nada"],
+                ["Che cazzata", "Vulgar", "Que treta / Que asneira"],
+                ["Che schifo", "Expressão", "Que nojento"],
+                ["Che casino", "Gíria", "Que confusão"],
+                ["Che bordello", "Gíria", "Que bordel/confusão"],
+                ["Fregatene!", "Gíria", "Não ligues!"],
+                ["Fa un caldo boia", "Gíria", "Calor de morrer"],
+                ["Ho fatto una cazzata", "Vulgar", "Fiz merda"],
+                ["Sono nella merda", "Vulgar", "Estou na merda"],
+                ["Sono fottuto", "Vulgar", "Estou fodido"],
+                ["Che figo!", "Gíria", "Que fixe/bom!"],
+                ["Che fregatura!", "Gíria", "Que roubo!"],
+                ["Devo filare", "Gíria", "Tenho de bazar"],
+                ["Faccia tosta", "Gíria", "Cara de pau / Descarado"],
+                ["Chi se ne frega", "Gíria", "Quem quer saber?"],
+                ["Figlio di puttana", "Vulgar", "Filho da puta"],
+                ["Testa di cazzo", "Vulgar", "Cabeça de caralho"],
+                ["Fatti i cazzi tuoi!", "Vulgar", "Mete-te na tua vida!"],
+                ["Vai a farti fottere", "Vulgar", "Vai-te foder"],
+                ["Levati dai coglioni", "Vulgar", "Sai-me da frente"],
+                ["Che cazzo guardi!?", "Vulgar", "O que caralho estás a olhar?"],
+                ["Fai schifo / cagare", "Vulgar", "Metes nojo / Cagar"],
+                ["Ti rompo il culo!", "Vulgar", "Parto-te o cu"],
+                ["Non me ne frega un cazzo!", "Vulgar", "Não quero saber um caralho"],
+                ["Ma vai a cagare!", "Vulgar", "Vai cagar!"],
+                ["Sono incazzato", "Vulgar", "Estou fudido/irritado"],
+                ["Rompicoglioni", "Vulgar", "Chato do caralho"],
+                ["Li mortacci tua", "Vulgar", "Vai-te foder (Roma)"],
+                ["Sti cazzi", "Gíria", "Não quero saber (Roma)"],
+                ["Cretino", "Insulto", "Cretino"],
+                ["Stronzo", "Vulgar", "Idiota / Cabrão"],
+                ["Coglione", "Vulgar", "Estúpido"],
+                ["Sei una capra", "Insulto", "És uma besta"],
+                ["Pezzo di merda", "Vulgar", "Pedaço de merda"],
+                ["Porca vacca", "Vulgar", "Porca vaca"],
+                ["Porca puttana", "Vulgar", "Puta que pariu"],
+                ["Da paura!", "Gíria", "Espetacular!"],
+                ["Dici solo cazzate!", "Vulgar", "Só dizes merda!"],
+                ["Non me ne frega un tubo", "Gíria", "Não me importo nada"],
+                ["È fuori come un balcone", "Gíria", "É maluco"],
+                ["Non fare casini", "Aviso", "Não faças asneira"],
+                ["Mi stai prendendo per il culo!?", "Vulgar", "Estás a gozar com a minha cara!?"],
+                ["Mi hai fatto cagare sotto!", "Vulgar", "Caguei-me de medo!"],
+                ["Avere la faccia da culo", "Vulgar", "Ter cara de pau / descarado"]
+            ]
+        
+        
+        };
+
+        // --- USER SYSTEM ---
+        let usersDB = {};
+        try { usersDB = JSON.parse(localStorage.getItem('italiano_users_db')) || {}; } catch(e) { usersDB = {}; }
+        let currentUser = null, isAuthMode = 'login', totalXP = 0, dailyXP = 0, hearts = 5, isPro = false, lastHeartDate = "";
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedUser = localStorage.getItem('italiano_last_user');
+            if (savedUser && usersDB[savedUser]) loginUser(savedUser); else showAuthScreen();
+        });
+
+        function showAuthScreen() { document.getElementById('auth-screen').style.display = 'flex'; document.getElementById('menu-screen').style.display = 'none'; }
+        function switchAuth(mode) {
+            isAuthMode = mode; document.querySelectorAll('.auth-tab').forEach(b => b.classList.remove('active')); event.target.classList.add('active');
+            document.querySelector('.auth-btn').innerText = mode === 'login' ? "Entrar" : "Criar Conta"; document.getElementById('auth-msg').innerText = "";
+        }
+        function handleAuth() {
+            const user = document.getElementById('auth-user').value.trim(); const pass = document.getElementById('auth-pass').value.trim();
+            if (!user || !pass) { document.getElementById('auth-msg').innerText = "Preenche tudo!"; return; }
+            if (isAuthMode === 'register') {
+                if (usersDB[user]) { document.getElementById('auth-msg').innerText = "Utilizador já existe."; return; }
+                usersDB[user] = { pass: pass, xp: 0, daily_xp: 0, hearts: 5, last_date: new Date().toDateString(), is_pro: false, stats: {}, study: [] };
+                saveDB(); loginUser(user);
+            } else {
+                if (!usersDB[user] || usersDB[user].pass !== pass) { document.getElementById('auth-msg').innerText = "Dados incorretos."; return; }
+                loginUser(user);
+            }
+        }
+        function loginUser(username) {
+            currentUser = username; const data = usersDB[username];
+            totalXP = data.xp; dailyXP = calculateDailyXP(data); hearts = data.hearts; isPro = data.is_pro; lastHeartDate = data.last_date;
+            wordStats = data.stats || {}; studyList = data.study || [];
+            localStorage.setItem('italiano_last_user', username); document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('menu-username').innerText = `Ciao, ${username}!`; updateUI(); goToMenu();
+        }
+        function logout() { saveUserData(); currentUser = null; localStorage.removeItem('italiano_last_user'); location.reload(); }
+        function saveUserData() {
+            if (!currentUser) return;
+            usersDB[currentUser].xp = totalXP; usersDB[currentUser].daily_xp = dailyXP; usersDB[currentUser].hearts = hearts;
+            usersDB[currentUser].last_date = lastHeartDate; usersDB[currentUser].is_pro = isPro; usersDB[currentUser].stats = wordStats; usersDB[currentUser].study = studyList;
+            saveDB();
+        }
+        function saveDB() { localStorage.setItem('italiano_users_db', JSON.stringify(usersDB)); }
+        function calculateDailyXP(data) { 
+            const today = new Date().toDateString();
+            if (data.last_date !== today) { data.daily_xp = 0; data.last_date = today; if (!data.is_pro) data.hearts = 5; }
+            return data.daily_xp;
+        }
+        function updateUI() {
+            document.getElementById('xp-el').innerText = `💎 ${totalXP}`; document.getElementById('streak-el').innerText = `🔥 ${state ? state.streak : 0}`;
+            let hStr = isPro ? "♾️" : (hearts === 0 ? "💔 0" : "❤️".repeat(hearts));
+            const hEl = document.getElementById('hearts-el'); if(hEl) { hEl.innerHTML = isPro ? "♾️ PRO" : hStr; if(isPro) hEl.classList.add('infinite'); else hEl.classList.remove('infinite'); }
+            const mH = document.getElementById('menu-hearts'); if(mH) mH.innerHTML = hStr;
+            const pL = document.getElementById('pro-status-label'); if(pL) { pL.innerText = isPro ? "⭐ Modo PRO (Teste)" : "Modo Gratuito"; pL.style.color = isPro ? "var(--duo-yellow)" : "#888"; }
+        }
+        function loseHeart() {
+            if (isPro) return true;
+            if (hearts > 0) { hearts--; updateUI(); saveUserData(); if (hearts === 0) { alert("Acabaram-se as vidas! 😢"); goToMenu(); return false; } } return true;
+        }
+        function canPlay() { if (isPro) return true; if (hearts <= 0) { alert("Sem vidas! 💔"); return false; } return true; }
+        function buyProDemo() {
+            if (currentUser !== "Helder") { alert("🔒 Apenas Admin."); return; }
+            if(confirm(isPro ? "Desativar PRO?" : "Ativar PRO?")) { isPro = !isPro; if(!isPro) hearts=5; updateUI(); saveUserData(); }
+        }
+        function toggleTestPro() { isPro = !isPro; if(!isPro) hearts=5; alert(isPro ? "PRO Ativado" : "Modo Gratuito"); saveUserData(); updateUI(); }
+
+        // --- SISTEMA DE GERAÇÃO DE FRASES INTELIGENTES E COMPLEXAS ---
+        const complexTemplates = {
+            nouns: [
+                { it: "Non riesco a trovare il mio {w}.", pt: "Não consigo encontrar o meu {t}." },
+                { it: "Vorrei comprare un nuovo {w} domani.", pt: "Gostaria de comprar um novo {t} amanhã." },
+                { it: "Hai visto dove ho messo il {w}?", pt: "Viste onde pus o {t}?" },
+                { it: "Questo {w} sembra molto costoso.", pt: "Este {t} parece muito caro." },
+                { it: "Il {w} è sul tavolo della cucina.", pt: "O {t} está na mesa da cozinha." },
+                { it: "Abbiamo bisogno di più {w} per la festa.", pt: "Precisamos de mais {t} para a festa." },
+                { it: "Senza {w}, non possiamo continuare.", pt: "Sem {t}, não podemos continuar." }
+            ],
+            verbs: [
+                { it: "Non ho voglia di {w} oggi.", pt: "Não tenho vontade de {t} hoje." },
+                { it: "È importante {w} ogni giorno.", pt: "É importante {t} todos os dias." },
+                { it: "Prima di uscire, devo {w}.", pt: "Antes de sair, tenho de {t}." },
+                { it: "Mi piace {w} quando ho tempo libero.", pt: "Gosto de {t} quando tenho tempo livre." },
+                { it: "Non so se posso {w} stasera.", pt: "Não sei se posso {t} esta noite." }
+            ],
+            adjectives: [
+                { it: "Sembra veramente {w}, vero?", pt: "Parece realmente {t}, não é?" },
+                { it: "Non essere così {w} con lui.", pt: "Não sejas tão {t} com ele." },
+                { it: "Trovo questo posto molto {w}.", pt: "Acho este lugar muito {t}." },
+                { it: "Tutto è diventato troppo {w}.", pt: "Tudo se tornou demasiado {t}." }
+            ],
+            generic: [
+                { it: "Si dice '{w}' in italiano.", pt: "Diz-se '{t}' em italiano." },
+                { it: "Non capisco cosa significa {w}.", pt: "Não percebo o que significa {t}." }
+            ]
+        };
+
+        function generateComplexSentence(wordIt, wordPt, vocabKey) {
+            if (wordIt.includes(' ')) {
+                if (wordIt.split(' ').length < 3) {
+                    return { it: `Sai che ${wordIt.toLowerCase()}?`, pt: `Sabes que ${wordPt.toLowerCase()}?` };
+                }
+                return { it: wordIt, pt: wordPt };
+            }
+
+            let type = 'nouns';
+            if (vocabKey.includes('verbos')) type = 'verbs';
+            else if (vocabKey.includes('adjetivos')) type = 'adjectives';
+            else if (vocabKey.includes('expressoes')) type = 'generic';
+
+            const pool = complexTemplates[type] || complexTemplates['nouns'];
+            const tpl = pool[Math.floor(Math.random() * pool.length)];
+            
+            const w = wordIt.toLowerCase();
+            const wPt = wordPt.toLowerCase();
+            
+            let sentIt = tpl.it.replace('{w}', w);
+            let sentPt = tpl.pt.replace('{t}', wPt);
+
+            sentIt = sentIt.charAt(0).toUpperCase() + sentIt.slice(1);
+            
+            return { it: sentIt, pt: sentPt };
+        }
+
+        // --- SISTEMA DINÂMICO PARA ASSEMBLE E WRITE (COM DOBRO DE PALAVRAS E RUÍDO GRAMATICAL) ---
+        function getDynamicSentences(vocabKey) {
+            const list = vocabDatabase[vocabKey] || vocabDatabase['basico_e_expressoes'];
+            // Palavras de ruído gramatical (difíceis)
+            const commonNoise = ["di", "a", "da", "in", "con", "su", "per", "tra", "fra", "il", "lo", "la", "i", "gli", "le", "un", "uno", "una", "che", "non", "è", "e", "o", "ma", "perché", "quando", "dove", "come"];
+
+            return list.map(item => {
+                const complex = generateComplexSentence(item[0], item[2], vocabKey);
+                const italianText = complex.it;
+                const ptText = complex.pt;
+
+                // Cria blocos da frase real
+                const words = italianText.replace(/[?!.,]/g, '').split(/\s+/);
+                let blocks = words.map(w => ({z: w, p: ''}));
+
+                // REGRA DO DOBRO:
+                const realCount = words.length;
+                const targetTotal = Math.max(realCount * 2, 12); // Pelo menos o dobro, ou mínimo 12 peças
+                const needed = targetTotal - realCount;
+
+                let attempts = 0;
+                const distractors = [];
+                
+                while (distractors.length < needed && attempts < 100) {
+                    attempts++;
+                    let randomWord = "";
+                    
+                    // 40% chance de ser um "ruído gramatical" (muito confuso), 60% chance de ser palavra da lista
+                    if (Math.random() < 0.4) {
+                        randomWord = commonNoise[Math.floor(Math.random() * commonNoise.length)];
+                    } else {
+                        const randomItem = list[Math.floor(Math.random() * list.length)];
+                        randomWord = randomItem[0].split(' ')[0].replace(/[?!.,]/g, '');
+                    }
+
+                    // Evita duplicados (case insensitive)
+                    const isDuplicate = words.some(w => w.toLowerCase() === randomWord.toLowerCase()) || 
+                                        distractors.some(d => d.toLowerCase() === randomWord.toLowerCase());
+
+                    if (!isDuplicate && randomWord.length > 0) {
+                        distractors.push(randomWord);
+                    }
+                }
+                
+                distractors.forEach(d => blocks.push({z: d, p: ''}));
+                
+                return { pt: ptText, blocks: blocks, valid: [italianText] };
+            });
+        }
+
+        // --- SISTEMA DINÂMICO PARA CLOZE ---
+        function getDynamicCloze(vocabKey) {
+            const list = vocabDatabase[vocabKey] || vocabDatabase['basico_e_expressoes'];
+            const selectedItems = [...list].sort(() => 0.5 - Math.random()).slice(0, 10);
+            
+            return selectedItems.map(item => {
+                const complex = generateComplexSentence(item[0], item[2], vocabKey);
+                const fullSent = complex.it;
+                const words = fullSent.split(/\s+/);
+                
+                let targetIndex = words.findIndex(w => w.toLowerCase().includes(item[0].toLowerCase()));
+                if (targetIndex === -1) {
+                    let maxLen = 0;
+                    words.forEach((w, i) => { if(w.length > maxLen) { maxLen = w.length; targetIndex = i; } });
+                }
+
+                const targetWord = words[targetIndex];
+                const cleanTarget = targetWord.replace(/[?!.,]/g, '');
+
+                return {
+                    fullSentence: fullSent, pt: complex.pt, 
+                    targetIndex: targetIndex, targetWord: targetWord, cleanTarget: cleanTarget,
+                    options: generateOptions(list, cleanTarget)
+                };
+            });
+        }
+
+        function generateOptions(fullList, correctWord) {
+            const cleanCorrect = correctWord.toLowerCase().replace(/[?!.,]/g, '');
+            const options = new Set();
+            options.add(cleanCorrect);
+            let attempts = 0;
+            while(options.size < 4 && attempts < 50) {
+                attempts++;
+                const randomItem = fullList[Math.floor(Math.random() * fullList.length)];
+                const rWords = randomItem[0].split(/\s+/);
+                const rWord = rWords[Math.floor(Math.random() * rWords.length)];
+                const cleanRandom = rWord.toLowerCase().replace(/[?!.,]/g, '');
+                if(cleanRandom !== cleanCorrect && cleanRandom.length > 2) options.add(cleanRandom);
+            }
+            return Array.from(options).sort(() => 0.5 - Math.random());
+        }
+
+        // --- SISTEMA DINÂMICO PARA DITADO ---
+        function getSmartSentencesForDictation(vocabKey) {
+            const list = vocabDatabase[vocabKey] || vocabDatabase['basico_e_expressoes'];
+            return [...list].sort(()=>0.5-Math.random()).slice(0, 10).map(item => {
+                const complex = generateComplexSentence(item[0], item[2], vocabKey);
+                return { sentence: complex.it, pt: complex.pt };
+            });
+        }
+
+        // --- GESTÃO DE VOCABULÁRIO ---
+        let savedVocab = localStorage.getItem('italiano_vocab_pref');
+        let currentVocabKey = (savedVocab && vocabDatabase[savedVocab]) ? savedVocab : 'basico_e_expressoes';
+        let vocab = vocabDatabase[currentVocabKey].map(item => ({ zh: item[0], py: item[1], pt: item[2] }));
+
+        window.addEventListener('DOMContentLoaded', () => { document.getElementById('vocab-select').value = currentVocabKey; });
+        function changeVocab(key) {
+            if (!vocabDatabase[key]) return; currentVocabKey = key; localStorage.setItem('italiano_vocab_pref', key);
+            vocab = vocabDatabase[key].map(item => ({ zh: item[0], py: item[1], pt: item[2] }));
+            if(document.getElementById('game-area').innerHTML !== "") goToMenu();
+        }
+
+        let studyList = []; let wordStats = {};
+        function trackWordResult(wordObj, isCorrect) {
+            if(!wordObj) return; const key = wordObj.zh || wordObj; if(!wordStats[key]) wordStats[key] = { correct: 0, wrong: 0 };
+            if(isCorrect) wordStats[key].correct++; else wordStats[key].wrong++; localStorage.setItem('italiano_stats', JSON.stringify(wordStats));
+        }
+        function addToStudy(vocabItem) { if (!studyList.some(w => w.zh === vocabItem.zh)) { studyList.push(vocabItem); localStorage.setItem('italiano_study', JSON.stringify(studyList)); updateStudyBadge(); } }
+        function removeFromStudy(index) { studyList.splice(index, 1); localStorage.setItem('italiano_study', JSON.stringify(studyList)); renderStudyList(); updateStudyBadge(); if(document.getElementById('flashcard-screen').style.display === 'flex') loadNextFlashcard(); }
+        function updateStudyBadge() { const badge = document.getElementById('study-badge'); if(badge) { badge.style.display = studyList.length > 0 ? 'block' : 'none'; badge.innerText = studyList.length; } }
+
+        let state = { sessionScore: 0, streak: 0, matchesFound: 0, totalPairs: 0, timer: null, maxTime: 0, timeLeft: 0, penalty: 0, firstCard: null, isLocked: false, activeVocab: [], isQuizMode: false, quizIndex: 0, quizQuestions: [], currentFlashcard: null, currentSentence: null, sentencePool: [], placedBlocks: [], shuffledBlocks: [], recognition: null, fillBlankData: [], dictationData: [] };
+        const els = { game: document.getElementById('game-area'), menu: document.getElementById('menu-screen'), study: document.getElementById('study-screen'), stats: document.getElementById('stats-screen'), guide: document.getElementById('guide-screen'), flashcard: document.getElementById('flashcard-screen'), end: document.getElementById('end-screen'), xp: document.getElementById('xp-el'), streak: document.getElementById('streak-el'), timerBox: document.getElementById('timer-box'), timerBar: document.getElementById('timer-bar'), menuTotal: document.getElementById('menu-total-score'), endTotal: document.getElementById('end-total-xp') };
+
+        function checkDailyReset() { if (!currentUser || !usersDB[currentUser]) return; const today = new Date().toDateString(); const userData = usersDB[currentUser]; if (userData.last_date !== today) { dailyXP = 0; userData.daily_xp = 0; userData.last_date = today; if (!userData.is_pro) { userData.hearts = 5; hearts = 5; } saveUserData(); } else { dailyXP = userData.daily_xp || 0; } updateDailyUI(); }
+        function updateDailyUI() { const bar = document.getElementById('daily-bar'); const text = document.getElementById('daily-text'); if(bar && text) { const pct = Math.min(100, (dailyXP / 100) * 100); bar.style.width = `${pct}%`; text.innerText = `${dailyXP} / 100 XP`; } }
+        function goToMenu() { if (state.recognition) { try { state.recognition.stop(); state.recognition = null; } catch(e) {} } els.game.innerHTML = ''; clearInterval(state.timer); els.timerBox.style.display = 'none'; [els.end, els.study, els.stats, els.guide, els.flashcard].forEach(el => el.style.display = 'none'); els.menu.style.display = 'flex'; els.xp.innerText = `💎 ${totalXP}`; els.menuTotal.innerText = `💎 Total XP: ${totalXP}`; checkDailyReset(); updateStudyBadge(); }
+
+        // --- MODO: MONTAR FRASES ---
+        function startAssembleMode() {
+            const dynamicPool = getDynamicSentences(currentVocabKey);
+            state.sentencePool = dynamicPool.sort(()=>0.5-Math.random()).slice(0, 10);
+            if(state.sentencePool.length === 0) { alert("Sem dados."); return; }
+            state.quizIndex = 0; state.sessionScore = 0; state.streak = 0; updateStats(); els.menu.style.display = 'none'; renderAssembleLevel();
+        }
+        function renderAssembleLevel() {
+            if(state.quizIndex >= state.sentencePool.length) { gameOver(true); return; } 
+            state.currentSentence = state.sentencePool[state.quizIndex]; state.placedBlocks = []; state.shuffledBlocks = [...state.currentSentence.blocks].sort(()=>0.5-Math.random());
+            els.game.innerHTML = `<div class="assemble-container"><div style="text-align:left;"><button class="trash-btn" style="font-size:1rem; opacity:0.7" onclick="goToMenu()">⬅ Sair</button></div><div class="assemble-prompt">Traduz: "${state.currentSentence.pt}"</div><div class="assemble-area" id="drop-zone"></div><div class="word-bank" id="word-bank">${state.shuffledBlocks.map((block, i) => `<div class="word-chip" onclick="moveBlock(this, ${i})"><span class="chip-zh">${block.z}</span></div>`).join('')}</div><button class="check-btn" onclick="checkAssemble()">Verificar</button><button class="mode-btn" style="margin-top:10px; font-size:0.8rem" onclick="skipLevel()">Saltar</button></div>`;
+        }
+        function moveBlock(el, index) {
+            if(el.classList.contains('used')) return; playSfx('flip'); el.classList.add('used');
+            const blockData = state.shuffledBlocks[index]; const dropZone = document.getElementById('drop-zone');
+            const newBlock = document.createElement('div'); newBlock.className = 'word-chip-placed'; newBlock.innerHTML = `<span class="chip-zh">${blockData.z}</span>`;
+            newBlock.onclick = () => { dropZone.removeChild(newBlock); el.classList.remove('used'); const removeIdx = state.placedBlocks.findIndex(b => b === blockData); if (removeIdx > -1) state.placedBlocks.splice(removeIdx, 1); };
+            dropZone.appendChild(newBlock); state.placedBlocks.push(blockData); speak(blockData.z);
+        }
+        function checkAssemble() {
+            const userSentenceClean = state.placedBlocks.map(b => b.z).join(' ').replace(/[.,?!]/g, '').toLowerCase().trim();
+            const isCorrect = state.currentSentence.valid.some(v => v.replace(/[.,?!]/g, '').toLowerCase().trim() === userSentenceClean);
+            if(isCorrect) { playSfx('correct'); speak(state.currentSentence.valid[0]); state.streak++; updateScore(20 + (state.streak*5)); state.quizIndex++; setTimeout(renderAssembleLevel, 1500); } 
+            else { playSfx('wrong'); loseHeart(); state.streak = 0; updateScore(-5); updateStats(); const dropZone = document.getElementById('drop-zone'); dropZone.style.animation = 'shake 0.4s'; setTimeout(()=>dropZone.style.animation='', 400); }
+        }
+        function skipLevel() { state.quizIndex++; renderAssembleLevel(); }
+
+        // --- MODO: ESCREVER ---
+        function startWriteMode() {
+            const dynamicPool = getDynamicSentences(currentVocabKey);
+            state.sentencePool = dynamicPool.sort(()=>0.5-Math.random()).slice(0, 10);
+            if(state.sentencePool.length === 0) { alert("Sem frases."); return; }
+            state.quizIndex = 0; state.sessionScore = 0; state.streak = 0; updateStats(); els.menu.style.display = 'none'; renderWriteLevel();
+        }
+        function renderWriteLevel() {
+            if(state.quizIndex >= state.sentencePool.length) { gameOver(true); return; }
+            state.currentSentence = state.sentencePool[state.quizIndex];
+            els.game.innerHTML = `<div class="write-container"><div style="text-align:left;"><button class="trash-btn" style="font-size:1rem; opacity:0.7" onclick="goToMenu()">⬅ Sair</button></div><div class="assemble-prompt">Escreve em Italiano:<br><b>"${state.currentSentence.pt}"</b></div><textarea class="write-input" id="write-input" placeholder="Escreve aqui..."></textarea><div style="display:flex; gap:10px; justify-content:center; margin-top: 15px;"><button class="fc-giveup-btn" style="max-width:100px" onclick="speak('${state.currentSentence.valid[0].replace(/'/g, "\\'")}')">👂 Ouvir</button><button class="check-btn" onclick="checkWrite()">Verificar</button></div><div id="write-feedback" style="margin-top:10px; font-weight:bold"></div></div>`;
+            setTimeout(() => document.getElementById('write-input').focus(), 100);
+        }
+        function checkWrite() {
+            const input = document.getElementById('write-input').value.trim();
+            const normalize = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[.,?!]/g, '').trim();
+            const isCorrect = state.currentSentence.valid.some(valid => normalize(input) === normalize(valid));
+            const feedback = document.getElementById('write-feedback');
+            if(isCorrect) { feedback.innerHTML = `<span style="color:var(--duo-green)">Correto!</span>`; playSfx('correct'); state.streak++; updateScore(25 + (state.streak*5)); state.quizIndex++; setTimeout(renderWriteLevel, 1500); }
+            else { feedback.innerHTML = `<span style="color:var(--duo-red)">Errado. Solução: ${state.currentSentence.valid[0]}</span>`; playSfx('wrong'); loseHeart(); state.streak = 0; updateScore(-5); updateStats(); }
+        }
+
+        // --- MODO: FALA ---
+        function startSpeechMode() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) { alert("Navegador não suportado."); return; }
+            state.activeVocab = [...vocab].sort(() => 0.5 - Math.random()).slice(0, 10);
+            state.quizIndex = 0; state.sessionScore = 0; state.streak = 0; updateStats();
+            state.recognition = new SpeechRecognition(); state.recognition.lang = 'it-IT'; state.recognition.continuous = false;
+            state.recognition.onresult = (event) => { const transcript = event.results[0][0].transcript; checkSpeech(transcript); document.querySelector('.mic-btn').classList.remove('listening'); };
+            state.recognition.onerror = () => { document.querySelector('.mic-btn').classList.remove('listening'); document.getElementById('speech-feedback').innerText = "Erro ao ouvir."; };
+            els.menu.style.display = 'none'; renderSpeechLevel();
+        }
+        function renderSpeechLevel() {
+            if(state.quizIndex >= state.activeVocab.length) { gameOver(true); return; }
+            const word = state.activeVocab[state.quizIndex];
+            els.game.innerHTML = `<div class="speech-container"><div style="width:100%; text-align:left; margin-bottom:5px;"><button class="trash-btn" style="font-size:1rem; opacity:0.7; padding:0;" onclick="goToMenu()">⬅ Sair</button></div><div style="font-size:1.1rem; color:#888;">Lê em voz alta:</div><div class="speech-target-zh" onclick="speak('${word.zh.replace(/'/g, "\\'")}')">${word.zh}</div><div class="speech-target-py">${word.py}</div><div class="speech-target-pt">${word.pt}</div><button class="mic-btn" onclick="toggleMic()">🎙️</button><div style="display:flex; gap:20px; justify-content:center; width:100%;"><button class="mode-btn" style="padding:10px" onclick="speak('${word.zh.replace(/'/g, "\\'")}')">👂 Ouvir</button><button class="mode-btn" style="padding:10px" onclick="skipSpeech()">⏭️ Saltar</button></div><div class="speech-feedback" id="speech-feedback">Clica para falar</div></div>`;
+        }
+        function skipSpeech() { try { state.recognition.stop(); } catch(e) {} state.quizIndex++; renderSpeechLevel(); }
+        function toggleMic() { if(!state.recognition) return; try { state.recognition.stop(); } catch(e) {} try { state.recognition.start(); document.querySelector('.mic-btn').classList.add('listening'); document.getElementById('speech-feedback').innerText = "A ouvir..."; } catch(e) { document.getElementById('speech-feedback').innerText = "Erro."; } }
+        function checkSpeech(transcript) {
+            const target = state.activeVocab[state.quizIndex].zh.toLowerCase().replace(/[?!.,]/g, '');
+            if (transcript.toLowerCase().includes(target)) { document.getElementById('speech-feedback').innerHTML = `<span style="color:var(--duo-green)">Correto!</span>`; playSfx('correct'); state.streak++; updateScore(20); state.quizIndex++; setTimeout(renderSpeechLevel, 1500); }
+            else { document.getElementById('speech-feedback').innerHTML = `<span style="color:var(--duo-red)">Ouvi: ${transcript}</span>`; playSfx('wrong'); loseHeart(); state.streak=0; updateScore(-5); updateStats(); }
+        }
+
+        // --- MODO: COMPLETAR ---
+        function startFillBlankMode() {
+            state.fillBlankData = getDynamicCloze(currentVocabKey);
+            if(state.fillBlankData.length === 0) { alert("Sem dados."); return; }
+            state.quizIndex = 0; state.sessionScore = 0; state.streak = 0; updateStats(); els.menu.style.display = 'none'; renderFillBlankLevel();
+        }
+        function renderFillBlankLevel() {
+            if(state.quizIndex >= state.fillBlankData.length) { gameOver(true); return; }
+            const data = state.fillBlankData[state.quizIndex];
+            const words = data.fullSentence.split(/\s+/);
+            const htmlWords = words.map((w, i) => i === data.targetIndex ? `<span class="cloze-blank" id="blank-spot">____</span>` : `<span>${w}</span>`);
+            els.game.innerHTML = `<div class="cloze-container"><div style="width:100%; text-align:left; margin-bottom:10px;"><button class="trash-btn" style="font-size:1rem; opacity:0.7; padding:0;" onclick="goToMenu()">⬅ Sair</button></div><div style="font-weight:bold; color:#ccc; text-transform:uppercase; font-size:0.9rem; letter-spacing:1px; margin-bottom:15px">Completa a frase</div><div class="cloze-sentence">${htmlWords.join(' ')}</div><div class="cloze-context">${data.pt}</div><div class="cloze-options">${data.options.map((opt) => `<button class="cloze-btn" onclick="checkFillBlank(this, '${opt.replace(/'/g, "\\'")}')">${opt}</button>`).join('')}</div><div id="cloze-feedback" style="min-height:20px; font-weight:bold; margin-top:20px"></div></div>`;
+        }
+        function checkFillBlank(btn, selectedWord) {
+            if(state.isLocked) return; state.isLocked = true;
+            const data = state.fillBlankData[state.quizIndex];
+            const isCorrect = selectedWord.toLowerCase() === data.cleanTarget.toLowerCase();
+            document.querySelectorAll('.cloze-btn').forEach(b => b.classList.add('disabled'));
+            if (isCorrect) {
+                btn.classList.add('correct'); document.getElementById('blank-spot').innerText = data.targetWord;
+                playSfx('correct'); speak(data.fullSentence); state.streak++; updateScore(20);
+                setTimeout(() => { state.quizIndex++; state.isLocked = false; renderFillBlankLevel(); }, 1500);
+            } else {
+                btn.classList.add('wrong'); playSfx('wrong'); loseHeart(); updateScore(-5);
+                document.getElementById('cloze-feedback').innerHTML = `<span style="color:var(--duo-red)">Resposta: ${data.cleanTarget}</span>`;
+                setTimeout(() => { state.quizIndex++; state.isLocked = false; renderFillBlankLevel(); }, 2000);
+            }
+        }
+
+        // --- MODO: DITADO ---
+        function startDictationMode() {
+            state.dictationData = getSmartSentencesForDictation(currentVocabKey);
+            if(state.dictationData.length === 0) { alert("Sem dados."); return; }
+            state.quizIndex = 0; state.sessionScore = 0; state.streak = 0; updateStats(); els.menu.style.display = 'none'; renderDictationLevel();
+        }
+        function renderDictationLevel() {
+            if(state.quizIndex >= state.dictationData.length) { gameOver(true); return; }
+            const data = state.dictationData[state.quizIndex];
+            els.game.innerHTML = `<div class="dictation-container"><div style="width:100%; text-align:left; margin-bottom:5px;"><button class="trash-btn" style="font-size:1rem; opacity:0.7; padding:0;" onclick="goToMenu()">⬅ Sair</button></div><h3 style="margin:0; color:var(--duo-text)">Escreve o que ouves</h3><div class="dictation-controls"><button class="dictation-btn-small" onclick="playDictation(0.5)">🐢</button><button class="dictation-btn-big" onclick="playDictation(1)">🔊</button></div><div class="dictation-hint">Dica: Refere-se a "${data.pt}"</div><textarea class="write-input" id="dictation-input" placeholder="Escreve em italiano..." style="height:70px"></textarea><button class="check-btn" onclick="checkDictation()">Verificar</button><div id="dictation-feedback" style="margin-top:10px; font-weight:bold"></div></div>`;
+            setTimeout(() => playDictation(1), 500); setTimeout(() => document.getElementById('dictation-input').focus(), 600);
+        }
+        function playDictation(rate) {
+            const text = state.dictationData[state.quizIndex].sentence;
+            if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = 'it-IT'; u.rate = rate === 1 ? 0.9 : 0.5; if(italianVoice) u.voice = italianVoice; window.speechSynthesis.speak(u); }
+        }
+        function checkDictation() {
+            const input = document.getElementById('dictation-input').value.trim();
+            const target = state.dictationData[state.quizIndex].sentence;
+            const cleanInput = input.replace(/[.?!]/g, '').toLowerCase().trim();
+            const cleanTarget = target.replace(/[.?!]/g, '').toLowerCase().trim();
+            if (cleanInput === cleanTarget) {
+                document.getElementById('dictation-feedback').innerHTML = `<span style="color:var(--duo-green)">Perfeito!</span>`;
+                playSfx('correct'); state.streak++; updateScore(25); state.quizIndex++; setTimeout(renderDictationLevel, 1500);
+            } else {
+                document.getElementById('dictation-feedback').innerHTML = `<div style="color:var(--duo-red)">Errado.</div><div style="color:#555; font-size:0.9rem; margin-top:5px">Correto: <b>${target}</b></div>`;
+                playSfx('wrong'); loseHeart(); updateScore(-5);
+                const btn = document.querySelector('.check-btn'); btn.innerText = "Continuar"; btn.onclick = () => { state.quizIndex++; renderDictationLevel(); }; btn.style.backgroundColor = "#ffc800";
+            }
+        }
+
+        // --- MATCH & QUIZ (Mantidos com lógica simplificada de áudio) ---
+        function startGame(mode) {
+            if (!canPlay()) return;
+            state.isQuizMode = false; let numPairs = mode==='easy'?8:(mode==='normal'?10:12); state.penalty = mode==='easy'?2:(mode==='normal'?5:10); state.maxTime = mode==='easy'?0:(mode==='normal'?60:45); if(mode==='hard') els.game.classList.add('hard-mode'); else els.game.classList.remove('hard-mode');
+            state.totalPairs = numPairs; state.sessionScore = 0; state.matchesFound = 0; state.streak = 0; updateStats();
+            state.activeVocab = [...vocab].sort(() => 0.5 - Math.random()).slice(0, Math.min(numPairs, vocab.length));
+            renderBoard(state.activeVocab.map((w,i)=>({...w,id:i,side:'pt'})).sort(()=>0.5-Math.random()), state.activeVocab.map((w,i)=>({...w,id:i,side:'zh'})).sort(()=>0.5-Math.random()));
+            els.menu.style.display = 'none'; if (state.maxTime > 0) { els.timerBox.style.display = 'block'; startTimer(state.maxTime); }
+        }
+        function renderBoard(l, r) {
+            els.game.innerHTML = `<div style="width:100%; padding:0 10px 10px 10px;"><button class="trash-btn" style="font-size:1rem; opacity:0.7" onclick="goToMenu()">⬅ Sair</button></div><div class="game-board"><div class="column" id="col-pt"></div><div class="column" id="col-zh"></div></div>`;
+            const cp = document.getElementById('col-pt'), cz = document.getElementById('col-zh');
+            l.forEach(c => cp.appendChild(createCard(c, 'pt'))); r.forEach(c => cz.appendChild(createCard(c, 'zh')));
+        }
+        function createCard(data, type) {
+            const el = document.createElement('div'); el.className = 'card';
+            el.innerHTML = type==='zh' ? `<span class="txt-zh">${data.zh}</span>` : `<span class="txt-pt">${data.pt}</span>`;
+            el.onclick = () => handleCardClick(el, data, type); return el;
+        }
+        function handleCardClick(el, data, type) {
+            if (!canPlay() || state.isLocked || el.classList.contains('matched') || el.classList.contains('selected')) return;
+            el.classList.add('selected'); if(type==='zh') speak(data.zh);
+            if (!state.firstCard) { state.firstCard = { el, data, type }; } 
+            else {
+                state.isLocked = true; const secondCard = { el, data, type };
+                if (state.firstCard.type === secondCard.type) { state.firstCard.el.classList.remove('selected'); state.firstCard = secondCard; state.isLocked = false; return; }
+                if (state.firstCard.data.id === secondCard.data.id) {
+                    state.matchesFound++; state.streak++; updateScore(10); playSfx('correct');
+                    setTimeout(() => { state.firstCard.el.classList.add('matched'); secondCard.el.classList.add('matched'); state.firstCard = null; state.isLocked = false; if(state.matchesFound >= state.activeVocab.length) gameOver(true); }, 300);
+                } else {
+                    playSfx('wrong'); loseHeart(); updateScore(-state.penalty); state.streak=0;
+                    state.firstCard.el.classList.add('wrong'); secondCard.el.classList.add('wrong');
+                    setTimeout(() => { state.firstCard.el.classList.remove('selected','wrong'); secondCard.el.classList.remove('selected','wrong'); state.firstCard = null; state.isLocked = false; }, 1000);
+                }
+            }
+        }
+        
+        function startQuizMode() {
+            if (!canPlay()) return; state.isQuizMode = true; state.sessionScore = 0; state.streak = 0; state.quizIndex = 0; updateStats();
+            const targets = [...vocab].sort(() => 0.5 - Math.random()).slice(0, 10);
+            state.quizQuestions = targets.map(target => {
+                const wrongs = []; while(wrongs.length < 3) { const w = vocab[Math.floor(Math.random() * vocab.length)]; if(w.zh !== target.zh && !wrongs.includes(w.pt)) wrongs.push(w.pt); }
+                const opts = [target.pt, ...wrongs].sort(()=>0.5-Math.random());
+                return { q: `Como se diz "${target.zh}"?`, opts: opts, correct: opts.indexOf(target.pt), vocabRef: target };
+            });
+            els.menu.style.display = 'none'; renderQuizQuestion();
+        }
+        function renderQuizQuestion() {
+            if(state.quizIndex >= state.quizQuestions.length) { gameOver(true); return; }
+            const q = state.quizQuestions[state.quizIndex];
+            
+            // ADICIONADO: O botão de sair na linha abaixo
+            els.game.innerHTML = `<div class="quiz-container">
+                <div style="width:100%; text-align:left; margin-bottom:10px;">
+                    <button class="trash-btn" style="font-size:1rem; opacity:0.7; padding:0;" onclick="goToMenu()">⬅ Sair</button>
+                </div>
+                <div class="quiz-question" onclick="speak('${q.vocabRef.zh.replace(/'/g, "\\'")}')">${q.q}</div>
+                <div class="quiz-options">${q.opts.map((opt, i) => `<button class="quiz-btn" onclick="handleQuizAnswer(this, ${i})"><span>${opt}</span></button>`).join('')}</div>
+            </div>`;
+        }
+        
+        function handleQuizAnswer(btn, idx) {
+            if(state.isLocked) return; state.isLocked = true; const q = state.quizQuestions[state.quizIndex];
+            if(idx === q.correct) { btn.classList.add('correct'); playSfx('correct'); updateScore(15); state.streak++; }
+            else { btn.classList.add('wrong'); playSfx('wrong'); loseHeart(); updateScore(-5); state.streak=0; }
+            setTimeout(() => { state.quizIndex++; state.isLocked = false; renderQuizQuestion(); }, 1500);
+        }
+
+        function updateScore(amount) { state.sessionScore += amount; totalXP += amount; dailyXP += amount; if(amount>0) updateUI(); saveUserData(); }
+        function updateStats() { els.streak.innerText = `🔥 ${state.streak}`; }
+        function startTimer(seconds) {
+            state.timeLeft = seconds; els.timerBar.style.width = '100%'; els.timerBar.classList.remove('critical');
+            state.timer = setInterval(() => {
+                state.timeLeft -= 0.1; const pct = (state.timeLeft / state.maxTime) * 100;
+                els.timerBar.style.width = `${pct}%`;
+                if (state.timeLeft <= 0) gameOver(false);
+            }, 100);
+        }
+        function gameOver(win) {
+            clearInterval(state.timer); state.isLocked = true; if(win) fireConfetti();
+            setTimeout(() => { els.end.style.display = 'flex'; document.getElementById('end-title').innerText = win ? "Nível Completo!" : "Fim de Jogo"; document.getElementById('end-msg').innerText = `Ganhaste ${state.sessionScore} XP!`; if(win) playSfx('win'); els.endTotal.innerText = `XP Total: ${totalXP}`; }, 500);
+        }
+
+        // --- EXTRAS ---
+       // --- FUNÇÕES FLASHCARDS CORRIGIDAS ---
+
+        function openFlashcards() {
+            els.menu.style.display = 'none';
+            els.flashcard.style.display = 'flex';
+            // Garante que o container começa limpo
+            loadNextFlashcard();
+        }
+
+        function loadNextFlashcard() {
+            // Limpa a área total
+            const screen = document.getElementById('flashcard-screen');
+            screen.innerHTML = '';
+
+            // 1. Cria o Cabeçalho com o botão Sair (igual aos outros modos)
+            const headerDiv = document.createElement('div');
+            headerDiv.style.width = '100%';
+            headerDiv.style.maxWidth = '600px';
+            headerDiv.style.textAlign = 'left';
+            headerDiv.style.marginBottom = '10px';
+            headerDiv.style.padding = '10px';
+            headerDiv.innerHTML = `<button class="trash-btn" style="font-size:1rem; opacity:0.7; padding:0;" onclick="goToMenu()">⬅ Sair</button>`;
+            screen.appendChild(headerDiv);
+
+            // 2. Título e Instrução
+            const title = document.createElement('h2');
+            title.innerText = "Flashcards";
+            title.style.marginBottom = "5px";
+            screen.appendChild(title);
+
+            const sub = document.createElement('p');
+            sub.style.color = "#777";
+            sub.style.marginBottom = "10px";
+            sub.innerText = "Escreve o significado e vira o cartão.";
+            screen.appendChild(sub);
+
+            // 3. Área do Cartão
+            const area = document.createElement('div');
+            area.id = 'fc-area';
+            screen.appendChild(area);
+
+            // Lógica de seleção da palavra
+            let pool = studyList.length > 0 ? studyList : vocab;
+            if(pool.length === 0) { area.innerHTML = "Vazio"; return; }
+            state.currentFlashcard = pool[Math.floor(Math.random() * pool.length)];
+
+            // 4. Criação do Cartão (Estrutura 3D)
+            const cardContainer = document.createElement('div');
+            cardContainer.className = 'flashcard-container';
+            
+            // HTML Interno do Cartão
+            cardContainer.innerHTML = `
+                <div class="flashcard-inner" id="fc-inner">
+                    <div class="fc-face fc-front">
+                        <div class="fc-zh-main" onclick="speak('${state.currentFlashcard.zh.replace(/'/g, "\\'")}')">${state.currentFlashcard.zh}</div>
+                        <div style="color:#999; font-style:italic; margin-bottom:10px">${state.currentFlashcard.py}</div>
+                        
+                        <input type="text" id="fc-guess-input" class="fc-input-guess" placeholder="Escreve em português..." autocomplete="off">
+                        
+                        <button class="check-btn" style="margin-top:15px; padding:10px 20px;" onclick="flipCard()">🔄 Virar / Verificar</button>
+                    </div>
+
+                    <div class="fc-face fc-back">
+                        <div class="fc-label">Resposta Correta:</div>
+                        <div class="fc-correct-ans" style="margin-bottom:10px">${state.currentFlashcard.pt}</div>
+                        
+                        <div id="fc-result-msg" class="fc-feedback-msg"></div>
+
+                        <div style="margin-top:20px; color:#555">
+                            <div style="font-size:1.5rem; font-weight:bold">${state.currentFlashcard.zh}</div>
+                        </div>
+
+                        <div class="fc-controls" style="margin-top:auto">
+                            <button class="fc-btn fc-know" onclick="nextFlashcard()">Próximo ➡</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            area.appendChild(cardContainer);
+            
+            // Focar automaticamente na caixa de texto
+            setTimeout(() => {
+                const input = document.getElementById('fc-guess-input');
+                if(input) input.focus();
+            }, 100);
+        }
+
+        function flipCard() {
+            const inner = document.getElementById('fc-inner');
+            const input = document.getElementById('fc-guess-input');
+            const feedback = document.getElementById('fc-result-msg');
+            
+            // Normalizar texto para comparação (ignora maiúsculas e acentos básicos)
+            const userVal = input.value.trim().toLowerCase();
+            const correctVal = state.currentFlashcard.pt.trim().toLowerCase();
+            
+            // Verifica se está correto (aproximado)
+            const isCorrect = userVal === correctVal || (userVal.length > 3 && correctVal.includes(userVal));
+
+            if (userVal.length > 0) {
+                if (isCorrect) {
+                    feedback.innerHTML = `<span style="color:var(--duo-green)">✅ Acertaste!</span>`;
+                    playSfx('correct');
+                } else {
+                    feedback.innerHTML = `<span style="color:var(--duo-red)">❌ A tua resposta: ${input.value}</span>`;
+                    playSfx('flip'); // Som neutro se errou
+                }
+            } else {
+                feedback.innerHTML = `<span style="color:#888">👁️ Apenas a ver</span>`;
+                playSfx('flip');
+            }
+
+            // Vira o cartão
+            inner.classList.add('flipped');
+            speak(state.currentFlashcard.zh);
+        }
+
+        function nextFlashcard() {
+            // Recarrega tudo para garantir que o estado 'flipped' desaparece
+            loadNextFlashcard();
+        }
+
+        function openStatsScreen() { els.menu.style.display = 'none'; els.stats.style.display = 'flex'; }
+        function openGuideScreen() { els.menu.style.display = 'none'; els.guide.style.display = 'flex'; filterGuide(''); }
+        function filterGuide(q) { 
+            const c = document.getElementById('guide-list-container'); c.innerHTML=''; 
+            vocab.filter(w=>w.zh.toLowerCase().includes(q.toLowerCase())).forEach(w=>{
+                const i=document.createElement('div'); i.className='study-item'; i.onclick=()=>speak(w.zh);
+                i.innerHTML=`<b>${w.zh}</b> - ${w.pt}`; c.appendChild(i);
+            });
+        }
+        function openStudyScreen() { els.menu.style.display = 'none'; els.study.style.display = 'flex'; renderStudyList(); }
+        function renderStudyList() {
+            const c = document.getElementById('study-list-container'); c.innerHTML='';
+            studyList.forEach((w,i)=>{
+                const el=document.createElement('div'); el.className='study-item'; 
+                el.innerHTML=`<span>${w.zh}</span><button class="trash-btn" onclick="removeFromStudy(${i})">🗑️</button>`;
+                c.appendChild(el);
+            });
+        }
+
+        function fireConfetti() {
+            const canvas = document.getElementById('confetti-canvas'); const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+            const p = Array.from({length:100}, () => ({x:Math.random()*canvas.width, y:-Math.random()*canvas.height, color:['#f00','#0f0','#00f'][Math.floor(Math.random()*3)], speed:Math.random()*5+2}));
+            function anim() { ctx.clearRect(0,0,canvas.width,canvas.height); p.forEach(pt=>{ pt.y+=pt.speed; ctx.fillStyle=pt.color; ctx.fillRect(pt.x,pt.y,5,5); }); requestAnimationFrame(anim); }
+            anim();
+        }
+    </script>
+</body>
+</html>
