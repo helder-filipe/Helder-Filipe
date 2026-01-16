@@ -61,7 +61,7 @@
         
         /* --- GAME ELEMENTS --- */
         
-        /* MATCH (2 VERTICAL COLUMNS) */
+        /* MATCH (VERTICAL COLUMNS) */
         .match-container { display: flex; width: 100%; max-width: 800px; gap: 15px; height: 100%; margin: 0 auto; }
         .match-col { flex: 1; display: flex; flex-direction: column; gap: 10px; }
         .col-header { text-align: center; font-weight: bold; color: #888; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 5px; }
@@ -85,11 +85,18 @@
         .option-btn.correct { background: #d7ffb8; border-color: var(--green); color: #2a6600; }
         .option-btn.wrong { background: #ffdfe0; border-color: var(--red); color: #a30000; }
         
-        /* Assemble */
-        .assemble-area { min-height: 100px; border-top: 2px solid var(--gray); border-bottom: 2px solid var(--gray); padding: 15px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; background: #fdfdfd; margin-bottom: 20px; }
+        /* Assemble & Builder */
+        .assemble-area { min-height: 80px; border-bottom: 2px solid var(--gray); padding: 15px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; background: #fff; margin-bottom: 20px; border-radius: 12px; }
         .word-chip { padding: 10px 15px; background: white; border: 2px solid var(--gray); border-radius: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #ccc; display: flex; flex-direction: column; align-items: center; }
         .word-chip:active { transform: translateY(4px); box-shadow: none; }
         .word-chip.used { opacity: 0; pointer-events: none; }
+
+        /* BUILDER (WOW STYLE) */
+        .builder-pool { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 20px; }
+        .letter-circle { width: 50px; height: 50px; border-radius: 50%; background: white; border: 2px solid var(--gray); display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; cursor: pointer; box-shadow: 0 4px 0 #ccc; user-select: none; }
+        .letter-circle:active { transform: translateY(3px); box-shadow: none; }
+        .letter-circle.used { opacity: 0; pointer-events: none; }
+        .builder-slot { width: 40px; height: 40px; border-bottom: 3px solid var(--gray); display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; margin: 0 5px; color: var(--blue); cursor: pointer; }
         
         /* Hanzi Canvas */
         .hanzi-container { width: 100%; max-width: 350px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 10px; }
@@ -120,7 +127,7 @@
     <div id="auth-screen" class="screen center-content" style="background: var(--green);">
         <div class="auth-box">
             <h1 style="margin-bottom:10px;">Polyglot Master 🌍</h1>
-            <p style="color:#666; margin-bottom:20px;">Italiano & Mandarim - Edição Completa</p>
+            <p style="color:#666; margin-bottom:20px;">Ultimate Edition</p>
             <input type="text" id="username" class="input-box" placeholder="O teu nome..." style="text-align:center">
             <button class="btn-action" onclick="app.login()">Começar</button>
         </div>
@@ -157,6 +164,7 @@
         <div class="mode-grid">
             <div class="mode-btn" onclick="game.start('match')"><span>🃏</span><div>Pares</div></div>
             <div class="mode-btn" onclick="game.start('quiz')"><span>❓</span><div>Quiz</div></div>
+            <div class="mode-btn" onclick="game.start('builder')"><span style="color:var(--orange)">🧱</span><div>Builder</div></div>
             <div class="mode-btn" onclick="game.start('assemble')"><span>🧩</span><div>Frases</div></div>
             <div class="mode-btn" onclick="game.start('write')"><span>✍️</span><div>Escrever</div></div>
             <div class="mode-btn" onclick="game.start('cloze')"><span style="color:var(--dark-blue)">📝</span><div>Lacunas</div></div>
@@ -194,9 +202,9 @@
     </div>
 
     <script>
-    /* --- 1. DATA: COMPLETE VOCABULARY --- */
+    /* --- 1. DATA: VOCABULARY --- */
     const DB = {
-        it: {
+         it: {
             basico_e_expressoes: [["Ciao","tcha-o","Olá"],["Grazie","","Obrigado"],["Prego","","De nada"],["Per favore","","Por favor"],["Sì","","Sim"],["No","","Não"],["Adesso","","Agora"],["Oggi","o-dji","Hoje"],["Domani","","Amanhã"],["Ieri","","Ontem"],["Sempre","","Sempre"],["Mai","","Nunca"],["Forse","","Talvez"],["Anche","an-ke","Também"],["Molto","","Muito"],["Tutto","","Tudo"],["Niente","","Nada"],["Chi?","ki","Quem?"],["Cosa?","","O quê?"],["Dove?","","Onde?"],["Quando?","","Quando?"],["Perché?","per-ké","Porquê?"],["Magari","","Quem dera"],["Boh","","Não sei"],["Dai","","Vá lá!"],["Figurati","","Imagina"],["Mica","","Não (enfático)"],["Cioè","","Isto é"],["Insomma","","Em suma"],["Allora","","Então"],["Comunque","","De qualquer forma"],["Appunto","","Exatamente"],["Sul serio?","","A sério?"],["Meno male","","Ainda bem"],["Auguri","","Parabéns"],["Buon appetito","","Bom apetite"],["Benvenuto","","Bem-vindo"],["Mi dispiace","","Lamento"],["Scusa","","Desculpa"],["Permesso","","Com licença"],["Piacere","","Prazer"],["Ecco","","Aqui está"],["Basta","","Chega"],["Zitto","","Cala-te"],["Aiuto","","Ajuda"],["Piano","","Devagar"],["Vaffanculo","","Vai à merda"],["Che peccato","","Que pena"],["Andiamo","","Vamos"],["D'accordo","","De acordo"]],
             comida_e_bebida: [["Cibo","","Comida"],["Colazione","","Pequeno-almoço"],["Pranzo","","Almoço"],["Cena","","Jantar"],["Merenda","","Lanche"],["Guanciale","","Papada de porco"],["Pancetta","","Bacon"],["Uova","","Ovos"],["Tuorli","","Gemas"],["Albumi","","Claras"],["Sughino","","Molho"],["Aceto","","Vinagre"],["Olio","","Azeite"],["Sale","","Sal"],["Pepe","","Pimenta"],["Zucchero","","Açúcar"],["Farina","","Farinha"],["Burro","","Manteiga"],["Marmellata","","Compota"],["Miele","","Mel"],["Pane","","Pão"],["Panino","","Sandes"],["Ciabatta","","Pão ciabatta"],["Fetta","","Fatia"],["Trancio","","Fatia"],["Formaggio","","Queijo"],["Prosciutto","","Presunto"],["Salame","","Salame"],["Salsiccia","","Salsicha"],["Manzo","","Vaca"],["Maiale","","Porco"],["Pollo","","Frango"],["Tacchino","","Peru"],["Bistecca","","Bife"],["Pesce","","Peixe"],["Tonno","","Atum"],["Salmone","","Salmão"],["Polpo","","Polvo"],["Gamberetto","","Camarão"],["Aragosta","","Lagosta"],["Cozza","","Mexilhão"],["Vongola","","Amêijoa"],["Calamaro","","Lula"],["Granchio","","Caranguejo"],["Pasta","","Massa"],["Riso","","Arroz"],["Zuppa","","Sopa"],["Insalata","","Salada"],["Verdura","","Legumes"],["Pomodoro","","Tomate"],["Patata","","Batata"],["Cipolla","","Cebola"],["Aglio","","Alho"],["Carota","","Cenoura"],["Sedano","","Aipo"],["Cetriolo","","Pepino"],["Melanzana","","Beringela"],["Zucchina","","Curgete"],["Peperoni","","Pimentos"],["Fagiolo","","Feijão"],["Piselli","","Ervilhas"],["Funghi","","Cogumelos"],["Carciofo","","Alcachofra"],["Broccolo","","Brócolos"],["Cavolfiore","","Couve-flor"],["Cavolo","","Couve"],["Lattuga","","Alface"],["Zucca","","Abóbora"],["Mais","","Milho"],["Barbabietola","","Beterraba"],["Frutta","","Fruta"],["Mela","","Maçã"],["Banana","","Banana"],["Arancia","","Laranja"],["Limone","","Limão"],["Fragola","","Morango"],["Uva","","Uva"],["Pesca","","Pêssego"],["Melone","","Melão"],["Anguria","","Melancia"],["Nocciola","","Avelã"],["Pistacchio","","Pistáchio"],["Dolce","","Doce"],["Gelato","","Gelado"],["Cioccolato","","Chocolate"],["Biscotto","","Bolacha"],["Torta","","Bolo"],["Caramella","","Rebuçado"],["Acqua","","Água"],["Vino","","Vinho"],["Birra","","Cerveja"],["Succo","","Sumo"],["Bibita","","Refrigerante"],["Caffè","","Café"],["Latte","","Leite"],["Tè","","Chá"]],
             corpo_e_saude: [["Corpo","","Corpo"],["Testa","","Cabeça"],["Faccia","","Cara"],["Capelli","","Cabelo"],["Fronte","","Testa"],["Occhi","","Olhos"],["Naso","","Nariz"],["Orecchio","","Orelha"],["Bocca","","Boca"],["Labbra","","Lábios"],["Denti","","Dentes"],["Lingua","","Língua"],["Mento","","Queixo"],["Guancia","","Bochecha"],["Collo","","Pescoço"],["Spalla","","Ombro"],["Petto","","Peito"],["Schiena","","Costas"],["Pancia","","Barriga"],["Stomaco","","Estômago"],["Braccio","","Braço"],["Gomito","","Cotovelo"],["Mano","","Mão"],["Dito","","Dedo"],["Unghia","","Unha"],["Gamba","","Perna"],["Ginocchio","","Joelho"],["Caviglia","","Tornozelo"],["Piede","","Pé"],["Cuore","","Coração"],["Sangue","","Sangue"],["Cervello","","Cérebro"],["Pelle","","Pele"],["Osso","","Osso"],["Muscolo","","Músculo"],["Salute","","Saúde"],["Malattia","","Doença"],["Dolore","","Dor"],["Febbre","","Febre"],["Raffreddore","","Constipação"],["Tosse","","Tosse"],["Starnuto","","Espirro"],["Vomito","","Vómito"],["Ferita","","Ferida"],["Ospedale","","Hospital"],["Medico","","Médico"],["Infermiera","","Enfermeira"],["Farmacia","","Farmácia"],["Medicina","","Remédio"],["Cerotto","","Penso"],["Ambulanza","","Ambulância"],["Incinta","","Grávida"],["Stanco","","Cansado"],["Malato","","Doente"]],
@@ -544,7 +552,7 @@
         }
     };
 
-    /* --- 2. SENTENCE GENERATOR --- */
+    /* --- 2. SENTENCE GENERATOR (FOR ASSEMBLE/CLOZE/WRITE) --- */
     const GENERATOR = {
         it: {
             templates: [
@@ -559,6 +567,7 @@
             get: function() { return this.templates.sort(()=>0.5-Math.random()).slice(0,5); }
         },
         zh: {
+            // Hardcoded dynamic logic for Mandarin
             get: function() {
                 const b = (z, p) => ({ z, p });
                 const pool = [
@@ -609,6 +618,7 @@
             this.lang = l;
             document.getElementById('lang-it').classList.toggle('active', l==='it');
             document.getElementById('lang-zh').classList.toggle('active', l==='zh');
+            
             document.getElementById('btn-hanzi').classList.toggle('hidden', l!=='zh');
             
             const sel = document.getElementById('vocab-select');
@@ -673,6 +683,7 @@
             switch(mode) {
                 case 'match': this.initMatch(area); break;
                 case 'quiz': this.initQuiz(area); break;
+                case 'builder': this.initBuilder(area); break;
                 case 'flashcards': this.initFlashcards(area); break;
                 case 'assemble': this.initAssemble(area); break;
                 case 'write': this.initWrite(area); break;
@@ -693,6 +704,7 @@
 
             const items = this.data.slice(0, pairs);
             
+            // Create Left (Native) and Right (Target) lists independently and shuffle
             const leftCards = items.map((w,i) => ({ id: i, type: 'n', txt: w.native })).sort(()=>0.5-Math.random());
             const rightCards = items.map((w,i) => ({ id: i, type: 't', txt: w.target, sub: w.phonetic })).sort(()=>0.5-Math.random());
             
@@ -730,6 +742,7 @@
                 this.state.locked = true;
                 
                 if(this.state.first.id === id) {
+                    // Match!
                     util.sfx('win'); this.sessionScore += 10;
                     setTimeout(() => {
                         el.classList.add('matched'); this.state.first.el.classList.add('matched');
@@ -739,6 +752,7 @@
                         app.updateUI();
                     }, 300);
                 } else {
+                    // Fail
                     util.sfx('lose'); 
                     if(app.difficulty !== 'easy') app.user[app.lang].hearts--; 
                     app.updateUI();
@@ -825,6 +839,70 @@
                 btn.classList.add('wrong'); util.sfx('lose'); app.user[app.lang].hearts--; app.updateUI();
                 if(app.user[app.lang].hearts<=0) app.toMenu();
             }
+        },
+
+        // --- BUILDER (WOW STYLE) ---
+        initBuilder: function(area) {
+            this.quizQ = 0;
+            // Filter single words, length > 2
+            this.builderList = this.data.filter(w => !w.target.includes(' ') && w.target.length > 1).slice(0, 5);
+            this.renderBuilder(area);
+        },
+        renderBuilder: function(area) {
+            if(this.quizQ >= this.builderList.length) return this.win();
+            const w = this.builderList[this.quizQ];
+            this.builderTarget = w.target.toUpperCase(); // Normalize
+            this.builderCurrent = [];
+            
+            // Scramble letters
+            let letters = this.builderTarget.split('').sort(()=>0.5-Math.random());
+            
+            area.innerHTML = `
+                <div class="prompt-box" style="margin-bottom:10px; font-size:1.2rem">${w.native}</div>
+                <div id="builder-slots" style="display:flex; justify-content:center; margin-bottom:20px; min-height:50px">
+                    ${this.builderTarget.split('').map(() => `<div class="builder-slot"></div>`).join('')}
+                </div>
+                <div class="builder-pool">
+                    ${letters.map((l, i) => `<div class="letter-circle" id="let-${i}" onclick="game.clickBuilderLetter('${l}', ${i})">${l}</div>`).join('')}
+                </div>
+                <button class="trash-btn" style="margin-top:30px; font-size:1rem" onclick="game.resetBuilder()">🔄 Reiniciar</button>
+            `;
+        },
+        clickBuilderLetter: function(char, idx) {
+            if(this.builderCurrent.length >= this.builderTarget.length) return;
+            const btn = document.getElementById('let-'+idx);
+            if(btn.classList.contains('used')) return;
+            
+            btn.classList.add('used');
+            this.builderCurrent.push(char);
+            
+            // Update slots
+            const slots = document.querySelectorAll('.builder-slot');
+            slots[this.builderCurrent.length-1].innerText = char;
+            
+            util.sfx('flip'); // Neutral sound
+            
+            if(this.builderCurrent.length === this.builderTarget.length) this.checkBuilder();
+        },
+        checkBuilder: function() {
+            const attempt = this.builderCurrent.join('');
+            if(attempt === this.builderTarget) {
+                util.sfx('win'); this.sessionScore+=20;
+                setTimeout(() => { this.quizQ++; this.renderBuilder(document.getElementById('game-content')); }, 1000);
+            } else {
+                util.sfx('lose'); app.user[app.lang].hearts--; app.updateUI();
+                document.getElementById('builder-slots').style.animation = "shake 0.4s";
+                setTimeout(()=>{
+                    document.getElementById('builder-slots').style.animation = "";
+                    this.resetBuilder();
+                }, 500);
+                if(app.user[app.lang].hearts<=0) app.toMenu();
+            }
+        },
+        resetBuilder: function() {
+            this.builderCurrent = [];
+            document.querySelectorAll('.builder-slot').forEach(s => s.innerText = "");
+            document.querySelectorAll('.letter-circle').forEach(b => b.classList.remove('used'));
         },
 
         // --- ASSEMBLE ---
@@ -1085,6 +1163,15 @@
             const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
             o.connect(g); g.connect(audioCtx.destination);
             if(type==='win') { o.frequency.value=600; g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.3); }
+            else { o.type='sawtooth'; o.frequency.value=150; g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.3); }
+            o.start(); o.stop(audioCtx.currentTime+0.3);
+        },
+        sfx: function(type) {
+            const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            o.connect(g); g.connect(audioCtx.destination);
+            if(type==='win') { o.frequency.value=600; g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.3); }
+            else if(type==='flip') { o.type='triangle'; o.frequency.value=400; g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.1); }
             else { o.type='sawtooth'; o.frequency.value=150; g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.3); }
             o.start(); o.stop(audioCtx.currentTime+0.3);
         },
