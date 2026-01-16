@@ -14,6 +14,7 @@
             --red: #ff4b4b; --dark-red: #c0392b;
             --yellow: #ffc800; --gray: #e5e5e5; 
             --text: #3c3c3c; --bg: #fff;
+            --purple: #9b59b6; --orange: #ff9600;
         }
         
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -86,7 +87,7 @@
         .option-btn.wrong { background: #ffdfe0; border-color: var(--red); color: #a30000; }
         
         /* Assemble & Builder */
-        .assemble-area { min-height: 80px; border-bottom: 2px solid var(--gray); padding: 15px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; background: #fff; margin-bottom: 20px; border-radius: 12px; }
+        .assemble-area { min-height: 100px; border-top: 2px solid var(--gray); border-bottom: 2px solid var(--gray); padding: 15px; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; background: #fdfdfd; margin-bottom: 20px; }
         .word-chip { padding: 10px 15px; background: white; border: 2px solid var(--gray); border-radius: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 0 #ccc; display: flex; flex-direction: column; align-items: center; }
         .word-chip:active { transform: translateY(4px); box-shadow: none; }
         .word-chip.used { opacity: 0; pointer-events: none; }
@@ -114,7 +115,8 @@
         .write-area { width: 90%; max-width: 500px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
         .btn-action { width: 100%; padding: 15px; background: var(--green); color: white; border: none; border-radius: 15px; font-weight: bold; font-size: 1.2rem; cursor: pointer; box-shadow: 0 4px 0 var(--dark-green); margin-top: 10px; }
         .btn-action:active { transform: translateY(4px); box-shadow: none; }
-        .btn-secondary { background: var(--gray); color: var(--text); box-shadow: 0 4px 0 #ccc; }
+        .btn-secondary { width: 100%; padding: 12px; background: #eee; color: #555; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 3px 0 #ccc; }
+        .btn-secondary:active { transform: translateY(3px); box-shadow: none; }
         .trash-btn { background: none; border: none; font-size: 1.5rem; opacity: 0.6; cursor: pointer; }
         .sub-txt { font-size: 0.85rem; color: #888; font-weight: normal; font-style: italic; }
         .big-char { font-size: 1.4rem; line-height: 1.2; }
@@ -127,7 +129,7 @@
     <div id="auth-screen" class="screen center-content" style="background: var(--green);">
         <div class="auth-box">
             <h1 style="margin-bottom:10px;">Polyglot Master 🌍</h1>
-            <p style="color:#666; margin-bottom:20px;">Ultimate Edition</p>
+            <p style="color:#666; margin-bottom:20px;">Italiano & Mandarim - Edição Completa</p>
             <input type="text" id="username" class="input-box" placeholder="O teu nome..." style="text-align:center">
             <button class="btn-action" onclick="app.login()">Começar</button>
         </div>
@@ -174,6 +176,7 @@
             <div id="btn-hanzi" class="mode-btn hidden" onclick="game.start('hanzi')"><span style="color:var(--dark-green)">🖌️</span><div>Hanzi</div></div>
         </div>
 
+        <button class="btn-secondary" style="margin-top:10px; font-size:0.9rem" onclick="app.togglePro()">🛠️ Modo Teste (Pro)</button>
         <button class="trash-btn" style="margin-top:20px; color:var(--red); font-size:1rem" onclick="app.logout()">Terminar Sessão</button>
     </div>
 
@@ -204,7 +207,7 @@
     <script>
     /* --- 1. DATA: VOCABULARY --- */
     const DB = {
-         it: {
+        it: {
             basico_e_expressoes: [["Ciao","tcha-o","Olá"],["Grazie","","Obrigado"],["Prego","","De nada"],["Per favore","","Por favor"],["Sì","","Sim"],["No","","Não"],["Adesso","","Agora"],["Oggi","o-dji","Hoje"],["Domani","","Amanhã"],["Ieri","","Ontem"],["Sempre","","Sempre"],["Mai","","Nunca"],["Forse","","Talvez"],["Anche","an-ke","Também"],["Molto","","Muito"],["Tutto","","Tudo"],["Niente","","Nada"],["Chi?","ki","Quem?"],["Cosa?","","O quê?"],["Dove?","","Onde?"],["Quando?","","Quando?"],["Perché?","per-ké","Porquê?"],["Magari","","Quem dera"],["Boh","","Não sei"],["Dai","","Vá lá!"],["Figurati","","Imagina"],["Mica","","Não (enfático)"],["Cioè","","Isto é"],["Insomma","","Em suma"],["Allora","","Então"],["Comunque","","De qualquer forma"],["Appunto","","Exatamente"],["Sul serio?","","A sério?"],["Meno male","","Ainda bem"],["Auguri","","Parabéns"],["Buon appetito","","Bom apetite"],["Benvenuto","","Bem-vindo"],["Mi dispiace","","Lamento"],["Scusa","","Desculpa"],["Permesso","","Com licença"],["Piacere","","Prazer"],["Ecco","","Aqui está"],["Basta","","Chega"],["Zitto","","Cala-te"],["Aiuto","","Ajuda"],["Piano","","Devagar"],["Vaffanculo","","Vai à merda"],["Che peccato","","Que pena"],["Andiamo","","Vamos"],["D'accordo","","De acordo"]],
             comida_e_bebida: [["Cibo","","Comida"],["Colazione","","Pequeno-almoço"],["Pranzo","","Almoço"],["Cena","","Jantar"],["Merenda","","Lanche"],["Guanciale","","Papada de porco"],["Pancetta","","Bacon"],["Uova","","Ovos"],["Tuorli","","Gemas"],["Albumi","","Claras"],["Sughino","","Molho"],["Aceto","","Vinagre"],["Olio","","Azeite"],["Sale","","Sal"],["Pepe","","Pimenta"],["Zucchero","","Açúcar"],["Farina","","Farinha"],["Burro","","Manteiga"],["Marmellata","","Compota"],["Miele","","Mel"],["Pane","","Pão"],["Panino","","Sandes"],["Ciabatta","","Pão ciabatta"],["Fetta","","Fatia"],["Trancio","","Fatia"],["Formaggio","","Queijo"],["Prosciutto","","Presunto"],["Salame","","Salame"],["Salsiccia","","Salsicha"],["Manzo","","Vaca"],["Maiale","","Porco"],["Pollo","","Frango"],["Tacchino","","Peru"],["Bistecca","","Bife"],["Pesce","","Peixe"],["Tonno","","Atum"],["Salmone","","Salmão"],["Polpo","","Polvo"],["Gamberetto","","Camarão"],["Aragosta","","Lagosta"],["Cozza","","Mexilhão"],["Vongola","","Amêijoa"],["Calamaro","","Lula"],["Granchio","","Caranguejo"],["Pasta","","Massa"],["Riso","","Arroz"],["Zuppa","","Sopa"],["Insalata","","Salada"],["Verdura","","Legumes"],["Pomodoro","","Tomate"],["Patata","","Batata"],["Cipolla","","Cebola"],["Aglio","","Alho"],["Carota","","Cenoura"],["Sedano","","Aipo"],["Cetriolo","","Pepino"],["Melanzana","","Beringela"],["Zucchina","","Curgete"],["Peperoni","","Pimentos"],["Fagiolo","","Feijão"],["Piselli","","Ervilhas"],["Funghi","","Cogumelos"],["Carciofo","","Alcachofra"],["Broccolo","","Brócolos"],["Cavolfiore","","Couve-flor"],["Cavolo","","Couve"],["Lattuga","","Alface"],["Zucca","","Abóbora"],["Mais","","Milho"],["Barbabietola","","Beterraba"],["Frutta","","Fruta"],["Mela","","Maçã"],["Banana","","Banana"],["Arancia","","Laranja"],["Limone","","Limão"],["Fragola","","Morango"],["Uva","","Uva"],["Pesca","","Pêssego"],["Melone","","Melão"],["Anguria","","Melancia"],["Nocciola","","Avelã"],["Pistacchio","","Pistáchio"],["Dolce","","Doce"],["Gelato","","Gelado"],["Cioccolato","","Chocolate"],["Biscotto","","Bolacha"],["Torta","","Bolo"],["Caramella","","Rebuçado"],["Acqua","","Água"],["Vino","","Vinho"],["Birra","","Cerveja"],["Succo","","Sumo"],["Bibita","","Refrigerante"],["Caffè","","Café"],["Latte","","Leite"],["Tè","","Chá"]],
             corpo_e_saude: [["Corpo","","Corpo"],["Testa","","Cabeça"],["Faccia","","Cara"],["Capelli","","Cabelo"],["Fronte","","Testa"],["Occhi","","Olhos"],["Naso","","Nariz"],["Orecchio","","Orelha"],["Bocca","","Boca"],["Labbra","","Lábios"],["Denti","","Dentes"],["Lingua","","Língua"],["Mento","","Queixo"],["Guancia","","Bochecha"],["Collo","","Pescoço"],["Spalla","","Ombro"],["Petto","","Peito"],["Schiena","","Costas"],["Pancia","","Barriga"],["Stomaco","","Estômago"],["Braccio","","Braço"],["Gomito","","Cotovelo"],["Mano","","Mão"],["Dito","","Dedo"],["Unghia","","Unha"],["Gamba","","Perna"],["Ginocchio","","Joelho"],["Caviglia","","Tornozelo"],["Piede","","Pé"],["Cuore","","Coração"],["Sangue","","Sangue"],["Cervello","","Cérebro"],["Pelle","","Pele"],["Osso","","Osso"],["Muscolo","","Músculo"],["Salute","","Saúde"],["Malattia","","Doença"],["Dolore","","Dor"],["Febbre","","Febre"],["Raffreddore","","Constipação"],["Tosse","","Tosse"],["Starnuto","","Espirro"],["Vomito","","Vómito"],["Ferita","","Ferida"],["Ospedale","","Hospital"],["Medico","","Médico"],["Infermiera","","Enfermeira"],["Farmacia","","Farmácia"],["Medicina","","Remédio"],["Cerotto","","Penso"],["Ambulanza","","Ambulância"],["Incinta","","Grávida"],["Stanco","","Cansado"],["Malato","","Doente"]],
@@ -567,7 +570,6 @@
             get: function() { return this.templates.sort(()=>0.5-Math.random()).slice(0,5); }
         },
         zh: {
-            // Hardcoded dynamic logic for Mandarin
             get: function() {
                 const b = (z, p) => ({ z, p });
                 const pool = [
@@ -588,7 +590,7 @@
 
     /* --- 3. APP ENGINE --- */
     const app = {
-        user: { name: "", it: { xp:0, hearts:5 }, zh: { xp:0, hearts:5 } },
+        user: { name: "", it: { xp:0, hearts:5 }, zh: { xp:0, hearts:5 }, isPro: false },
         lang: 'it',
         vocabKey: 'basico_e_expressoes',
         difficulty: 'easy',
@@ -614,11 +616,17 @@
         logout: function() { this.save(); location.reload(); },
         save: function() { localStorage.setItem('polyglot_user_' + this.user.name, JSON.stringify(this.user)); localStorage.setItem('polyglot_last_user', this.user.name); },
 
+        togglePro: function() {
+            this.user.isPro = !this.user.isPro;
+            alert(this.user.isPro ? "Modo Teste ATIVADO: Vidas Infinitas! ♾️" : "Modo Teste DESATIVADO.");
+            this.updateUI();
+            this.save();
+        },
+
         setLang: function(l) {
             this.lang = l;
             document.getElementById('lang-it').classList.toggle('active', l==='it');
             document.getElementById('lang-zh').classList.toggle('active', l==='zh');
-            
             document.getElementById('btn-hanzi').classList.toggle('hidden', l!=='zh');
             
             const sel = document.getElementById('vocab-select');
@@ -646,9 +654,10 @@
 
         updateUI: function() {
             const stats = this.user[this.lang];
+            const heartText = this.user.isPro ? "♾️" : ("❤️".repeat(stats.hearts) || "💔");
             document.getElementById('menu-xp').innerText = "💎 " + stats.xp + " XP";
-            document.getElementById('menu-hearts').innerText = "❤️".repeat(stats.hearts) || "💔";
-            document.getElementById('game-hearts').innerText = "❤️".repeat(stats.hearts) || "💔";
+            document.getElementById('menu-hearts').innerText = heartText;
+            document.getElementById('game-hearts').innerText = heartText;
             document.getElementById('game-score').innerText = "💎 " + (game.sessionScore || 0);
         },
 
@@ -668,7 +677,7 @@
         sessionScore: 0, timer: null, data: [],
         
         start: function(mode) {
-            if(app.user[app.lang].hearts <= 0) return alert("Sem vidas! ❤️");
+            if(!app.user.isPro && app.user[app.lang].hearts <= 0) return alert("Sem vidas! ❤️");
             this.sessionScore = 0;
             app.updateUI();
             
@@ -704,7 +713,6 @@
 
             const items = this.data.slice(0, pairs);
             
-            // Create Left (Native) and Right (Target) lists independently and shuffle
             const leftCards = items.map((w,i) => ({ id: i, type: 'n', txt: w.native })).sort(()=>0.5-Math.random());
             const rightCards = items.map((w,i) => ({ id: i, type: 't', txt: w.target, sub: w.phonetic })).sort(()=>0.5-Math.random());
             
@@ -742,7 +750,6 @@
                 this.state.locked = true;
                 
                 if(this.state.first.id === id) {
-                    // Match!
                     util.sfx('win'); this.sessionScore += 10;
                     setTimeout(() => {
                         el.classList.add('matched'); this.state.first.el.classList.add('matched');
@@ -752,21 +759,20 @@
                         app.updateUI();
                     }, 300);
                 } else {
-                    // Fail
                     util.sfx('lose'); 
-                    if(app.difficulty !== 'easy') app.user[app.lang].hearts--; 
+                    if(!app.user.isPro && app.difficulty !== 'easy') app.user[app.lang].hearts--; 
                     app.updateUI();
                     el.classList.add('wrong'); this.state.first.el.classList.add('wrong');
                     setTimeout(() => {
                         el.classList.remove('selected','wrong'); this.state.first.el.classList.remove('selected','wrong');
                         this.state.first = null; this.state.locked = false;
-                        if(app.user[app.lang].hearts<=0) app.toMenu();
+                        if(!app.user.isPro && app.user[app.lang].hearts<=0) app.toMenu();
                     }, 800);
                 }
             }
         },
 
-        // --- CLOZE (UNIVERSAL) ---
+        // --- CLOZE ---
         initCloze: function(area) {
             this.quizQ = 0;
             this.sentList = GENERATOR[app.lang].get();
@@ -806,8 +812,10 @@
                 btn.classList.add('correct'); util.sfx('win'); this.sessionScore+=20; util.speak(sentence);
                 setTimeout(() => { this.quizQ++; this.renderCloze(document.getElementById('game-content')); }, 1500);
             } else {
-                btn.classList.add('wrong'); util.sfx('lose'); app.user[app.lang].hearts--; app.updateUI();
-                if(app.user[app.lang].hearts<=0) app.toMenu();
+                btn.classList.add('wrong'); util.sfx('lose'); 
+                if(!app.user.isPro) app.user[app.lang].hearts--; 
+                app.updateUI();
+                if(!app.user.isPro && app.user[app.lang].hearts<=0) app.toMenu();
             }
         },
 
@@ -836,25 +844,24 @@
                 btn.classList.add('correct'); util.sfx('win'); this.sessionScore+=15; app.updateUI();
                 setTimeout(() => { this.quizQ++; this.renderQuiz(document.getElementById('game-content')); }, 1000);
             } else {
-                btn.classList.add('wrong'); util.sfx('lose'); app.user[app.lang].hearts--; app.updateUI();
-                if(app.user[app.lang].hearts<=0) app.toMenu();
+                btn.classList.add('wrong'); util.sfx('lose'); 
+                if(!app.user.isPro) app.user[app.lang].hearts--; 
+                app.updateUI();
+                if(!app.user.isPro && app.user[app.lang].hearts<=0) app.toMenu();
             }
         },
 
         // --- BUILDER (WOW STYLE) ---
         initBuilder: function(area) {
             this.quizQ = 0;
-            // Filter single words, length > 2
             this.builderList = this.data.filter(w => !w.target.includes(' ') && w.target.length > 1).slice(0, 5);
             this.renderBuilder(area);
         },
         renderBuilder: function(area) {
             if(this.quizQ >= this.builderList.length) return this.win();
             const w = this.builderList[this.quizQ];
-            this.builderTarget = w.target.toUpperCase(); // Normalize
+            this.builderTarget = w.target.toUpperCase();
             this.builderCurrent = [];
-            
-            // Scramble letters
             let letters = this.builderTarget.split('').sort(()=>0.5-Math.random());
             
             area.innerHTML = `
@@ -872,16 +879,11 @@
             if(this.builderCurrent.length >= this.builderTarget.length) return;
             const btn = document.getElementById('let-'+idx);
             if(btn.classList.contains('used')) return;
-            
             btn.classList.add('used');
             this.builderCurrent.push(char);
-            
-            // Update slots
             const slots = document.querySelectorAll('.builder-slot');
             slots[this.builderCurrent.length-1].innerText = char;
-            
-            util.sfx('flip'); // Neutral sound
-            
+            util.sfx('flip');
             if(this.builderCurrent.length === this.builderTarget.length) this.checkBuilder();
         },
         checkBuilder: function() {
@@ -890,13 +892,12 @@
                 util.sfx('win'); this.sessionScore+=20;
                 setTimeout(() => { this.quizQ++; this.renderBuilder(document.getElementById('game-content')); }, 1000);
             } else {
-                util.sfx('lose'); app.user[app.lang].hearts--; app.updateUI();
+                util.sfx('lose'); 
+                if(!app.user.isPro) app.user[app.lang].hearts--; 
+                app.updateUI();
                 document.getElementById('builder-slots').style.animation = "shake 0.4s";
-                setTimeout(()=>{
-                    document.getElementById('builder-slots').style.animation = "";
-                    this.resetBuilder();
-                }, 500);
-                if(app.user[app.lang].hearts<=0) app.toMenu();
+                setTimeout(()=>{ document.getElementById('builder-slots').style.animation = ""; this.resetBuilder(); }, 500);
+                if(!app.user.isPro && app.user[app.lang].hearts<=0) app.toMenu();
             }
         },
         resetBuilder: function() {
@@ -915,7 +916,6 @@
             if(this.quizQ >= this.sentList.length) return this.win();
             const s = this.sentList[this.quizQ];
             this.assembleAns = [];
-            
             let blocks = [];
             if(app.lang === 'it') blocks = s.b.sort(()=>0.5-Math.random()).map(w => ({txt:w, sub:''}));
             else blocks = s.b.sort(()=>0.5-Math.random()).map(w => ({txt:w.z, sub:w.p}));
@@ -944,10 +944,12 @@
                 util.sfx('win'); this.sessionScore+=20; util.speak(s.a);
                 setTimeout(() => { this.quizQ++; this.renderAssemble(document.getElementById('game-content')); }, 1500);
             } else {
-                util.sfx('lose'); app.user[app.lang].hearts--; app.updateUI();
+                util.sfx('lose'); 
+                if(!app.user.isPro) app.user[app.lang].hearts--; 
+                app.updateUI();
                 document.getElementById('drop-zone').style.animation = "shake 0.4s";
                 setTimeout(()=>document.getElementById('drop-zone').style.animation="",400);
-                if(app.user[app.lang].hearts<=0) app.toMenu();
+                if(!app.user.isPro && app.user[app.lang].hearts<=0) app.toMenu();
             }
         },
 
@@ -990,8 +992,10 @@
                 setTimeout(() => { this.quizQ++; this.renderInput(document.getElementById('game-content')); }, 1500);
             } else {
                 fb.innerHTML = `<span style='color:red'>Errado: ${correct}</span>`;
-                util.sfx('lose'); app.user[app.lang].hearts--; app.updateUI();
-                if(app.user[app.lang].hearts<=0) app.toMenu();
+                util.sfx('lose'); 
+                if(!app.user.isPro) app.user[app.lang].hearts--; 
+                app.updateUI();
+                if(!app.user.isPro && app.user[app.lang].hearts<=0) app.toMenu();
             }
         },
 
@@ -1157,14 +1161,6 @@
                 u.rate = 0.9;
                 window.speechSynthesis.speak(u);
             }
-        },
-        sfx: function(type) {
-            const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
-            const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-            o.connect(g); g.connect(audioCtx.destination);
-            if(type==='win') { o.frequency.value=600; g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.3); }
-            else { o.type='sawtooth'; o.frequency.value=150; g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.3); }
-            o.start(); o.stop(audioCtx.currentTime+0.3);
         },
         sfx: function(type) {
             const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
