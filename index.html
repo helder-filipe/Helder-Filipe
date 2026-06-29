@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
@@ -196,6 +195,10 @@
             <div class="mode-btn" onclick="game.start('speech')"><span>🎙️</span><div>Falar</div></div>
             <div class="mode-btn" onclick="game.start('flashcards')"><span>🗂️</span><div>Flashcards</div></div>
             <div id="btn-hanzi" class="mode-btn hidden" onclick="game.start('hanzi')"><span style="color:var(--dark-green)">🖌️</span><div>Hanzi</div></div>
+            <div class="mode-btn" onclick="game.startReview()" style="border-color: var(--red); box-shadow: 0 4px 0 var(--dark-red);">
+                <span style="color:var(--red)">❤️‍🩹</span>
+                <div style="color:var(--dark-red)">Rever Erros</div>
+            </div>
         </div>
 
         <button class="btn-secondary" style="margin-top:10px; font-size:0.9rem" onclick="app.togglePro()">🛠️ Modo Teste (Pro)</button>
@@ -227,6 +230,34 @@
     </div>
 
     <script>
+    
+    const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbz0AWe_cOERrchx2M75mXoM_83HLWRivRniPmoCne4zdk32mkBV-c_TSzyZMgnGu18i/exec";
+
+        // Função global para registar as falhas
+        function registarFalhaNoSheets(palavra, traducao, motivo) {
+            if (!GOOGLE_SHEETS_URL || GOOGLE_SHEETS_URL.includes("O_TEU_URL")) return;
+
+            // Criamos o objeto incluindo o nome de utilizador guardado no teu script
+            const dados = {
+                jogador: app.user.name || "Desconhecido",
+                idioma: app.lang.toUpperCase(),
+                palavra: palavra,
+                traducao: traducao,
+                motivo: motivo
+            };
+
+            // Alterado para um pedido de texto simples (text/plain)
+            // Isto engana o bloqueio de CORS do Google e garante que o JSON chega inteiro ao Sheets
+            fetch(GOOGLE_SHEETS_URL, {
+                method: "POST",
+                body: JSON.stringify(dados)
+            })
+            .then(res => console.log("Registo enviado para o Sheets."))
+            .catch(err => console.error("Erro na ligação ao Sheets:", err));
+        }
+    
+    
+    
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     
     /* --- 1. DATA: VOCABULARY --- */
@@ -1337,7 +1368,17 @@
                 ];
                 return pool.sort(()=>0.5-Math.random()).slice(0,5);
             }
-        }
+        },
+        en: {
+                templates: [
+                    { t: "A raposa castanha salta", a: "The brown fox jumps", b: ["The","brown","fox","jumps"] },
+                    { t: "Eu gosto de aprender línguas", a: "I like to learn languages", b: ["I","like","to","learn","languages"] },
+                    { t: "Onde fica a biblioteca?", a: "Where is the library?", b: ["Where","is","the","library","?"] },
+                    { t: "O desenvolvimento sustentável é importante", a: "Sustainable development is important", b: ["Sustainable","development","is","important"] },
+                    { t: "Nós precisamos de proteger o planeta", a: "We need to protect the planet", b: ["We","need","to","protect","the","planet"] }
+                ],
+                get: function() { return this.templates.sort(()=>0.5-Math.random()).slice(0,5); }
+            }
     };
 
     /* --- 3. APP ENGINE --- */
@@ -1424,7 +1465,14 @@
 
         toMenu: function() {
             clearInterval(game.timer);
-            if(game.recognition) try { game.recognition.stop(); } catch(e){}
+            // CORREÇÃO CRÍTICA DO MICROFONE:
+            if(game.recognition) {
+                try {
+                    game.recognition.onend = null; // Corta o loop de reinício automático
+                    game.recognition.stop();       // Para de ouvir
+                    game.recognition.abort();      // Desliga o hardware do microfone imediatamente
+                } catch(e){ console.log("Erro ao desligar mic:", e); }
+            }
             document.getElementById('game-screen').classList.add('hidden');
             document.getElementById('end-screen').classList.add('hidden');
             document.getElementById('menu-screen').classList.remove('hidden');
@@ -1462,6 +1510,45 @@
                 case 'hanzi': this.initHanzi(area); break;
                 case 'cloze': this.initCloze(area); break;
             }
+        },
+
+        // Inicia o módulo de revisão de forma dinâmica
+        startReview: function() {
+            if (!GOOGLE_SHEETS_URL || GOOGLE_SHEETS_URL.includes("O_TEU_URL")) {
+                return alert("Configura primeiro o URL do Google Sheets!");
+            }
+
+            const area = document.getElementById('game-content');
+            area.innerHTML = '<div class="center-content" style="font-weight:bold; color:#666;">A carregar os teus erros do Google Sheets... ⏳</div>';
+            
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('timer-box').style.display = 'none';
+            this.sessionScore = 0;
+            app.updateUI();
+
+            const urlComFiltros = `${GOOGLE_SHEETS_URL}?jogador=${encodeURIComponent(app.user.name.trim())}&idioma=${encodeURIComponent(app.lang.trim().toUpperCase())}`;
+
+            // Faz o pedido de leitura ao Google Sheets
+            fetch(urlComFiltros)
+            .then(res => res.json())
+            .then(response => {
+                if (response.status === "success" && response.data.length > 0) {
+                    // Injeta a lista de erros extraídos do Sheets no jogo e baralha
+                    this.data = response.data.sort(() => 0.5 - Math.random());
+                    this.quizQ = 0;
+                    // Reutiliza o teu ecrã de Quiz original para praticar os erros!
+                    this.renderQuiz(area);
+                } else {
+                    alert("Boa! Não encontrámos erros registados para ti neste idioma no Google Sheets. ✨");
+                    app.toMenu();
+                }
+            })
+            .catch(err => {
+                console.error("Erro ao ler do Sheets:", err);
+                alert("Não foi possível carregar os erros. Certifica-te de que a implementação web está correta.");
+                app.toMenu();
+            });
         },
 
         // --- MATCH (2 VERTICAL COLUMNS) ---
@@ -1505,9 +1592,14 @@
             el.classList.add('selected');
 
             if(!this.state.first) {
-                this.state.first = { el, id, type };
+                // Guardamos também o texto e o elemento completo no primeiro clique
+                this.state.first = { el, id, type, txt: txt || el.innerText.split('\n')[0].trim() };
             } else {
-                if(this.state.first.type === type) { this.state.first.el.classList.remove('selected'); this.state.first = {el,id,type}; return; }
+                if(this.state.first.type === type) { 
+                    this.state.first.el.classList.remove('selected'); 
+                    this.state.first = { el, id, type, txt: txt || el.innerText.split('\n')[0].trim() }; 
+                    return; 
+                }
                 this.state.locked = true;
                 
                 if(this.state.first.id === id) {
@@ -1520,9 +1612,28 @@
                         app.updateUI();
                     }, 300);
                 } else {
-                    util.sfx('lose'); 
-                    if(!app.user.isPro && app.difficulty !== 'easy') app.user[app.lang].hearts--; 
+                    util.sfx('lose');
+                    if(!app.user.isPro && app.difficulty !== 'easy') app.user[app.lang].hearts--;
                     app.updateUI();
+
+                    // --- REGISTO CORRIGIDO PARA O GOOGLE SHEETS ---
+                    // 1. Identificamos qual das duas cartas clicadas é a estrangeira (Target) e qual é a em português (Native)
+                    let cartaEstrangeiraText = type === 't' ? txt : this.state.first.txt;
+                    let cartaPortuguesaText = type === 'n' ? el.innerText.split('\n')[0].trim() : this.state.first.el.innerText.split('\n')[0].trim();
+
+                    // 2. Procuramos no banco de dados o objeto real da palavra estrangeira em que o utilizador clicou
+                    // Isto garante que se clicaste em "Puffed", o Sheets vai registar "Puffed" e a sua tradução correta
+                    if (cartaEstrangeiraText) {
+                        const itemOriginal = this.data.find(w => w.target === cartaEstrangeiraText);
+                        if (itemOriginal) {
+                            registarFalhaNoSheets(itemOriginal.target, itemOriginal.native, "Erro nos Pares");
+                        } else {
+                            // Fallback caso não encontre no array: envia o que estava escrito nas cartas
+                            registarFalhaNoSheets(cartaEstrangeiraText, cartaPostal || cartaAutomovel || cartaPortuguesaText, "Erro nos Pares (Visual)");
+                        }
+                    }
+                    // ----------------------------------------------
+
                     el.classList.add('wrong'); this.state.first.el.classList.add('wrong');
                     setTimeout(() => {
                         el.classList.remove('selected','wrong'); this.state.first.el.classList.remove('selected','wrong');
@@ -1605,9 +1716,17 @@
                 btn.classList.add('correct'); util.sfx('win'); this.sessionScore+=15; app.updateUI();
                 setTimeout(() => { this.quizQ++; this.renderQuiz(document.getElementById('game-content')); }, 1000);
             } else {
-                btn.classList.add('wrong'); util.sfx('lose'); 
-                if(!app.user.isPro) app.user[app.lang].hearts--; 
+                btn.classList.add('wrong'); util.sfx('lose');
+                if(!app.user.isPro) app.user[app.lang].hearts--;
                 app.updateUI();
+                
+                // CORREÇÃO: Captura a pergunta atual do quiz
+                const q = this.data[this.quizQ];
+                if (q) {
+                    // Envia (Estrangeira, Português, Motivo)
+                    registarFalhaNoSheets(q.target, q.native, "Erro no Quiz");
+                }
+                
                 if(!app.user.isPro && app.user[app.lang].hearts<=0) app.toMenu();
             }
         },
@@ -1945,7 +2064,37 @@ clearHanziCanvas: function() {
                     fill.style.width = (t/sec*100) + "%";
                     if(t < 5) fill.classList.add('critical');
                 }
-                if(t<=0) { clearInterval(this.timer); alert("Tempo!"); app.toMenu(); }
+                if(t<=0) { 
+                    clearInterval(this.timer); 
+                    
+                    // CORREÇÃO CRÍTICA: Enviar o que ficou por responder antes de sair
+                    if (game.data && game.data.length > 0) {
+                        // Se for um modo sequencial (Quiz, Escrever, etc.)
+                        if (typeof game.quizQ === 'number' && game.data[game.quizQ]) {
+                            const pendente = game.data[game.quizQ];
+                            registarFalhaNoSheets(pendente.target, pendente.native, "Falta de Tempo");
+                        } 
+                        // Se for o modo de Pares (Match), envia todas as cartas que ainda não foram limpas (sem a classe .matched)
+                        else {
+                            const cartasRestantes = document.querySelectorAll('.match-container .card:not(.matched)');
+                            const targetsEnviados = new Set();
+                            
+                            cartasRestantes.forEach(card => {
+                                // Procuramos no banco de dados o item correspondente ao texto da carta
+                                const textoCard = card.innerText.split('\n')[0].trim();
+                                const encontrado = game.data.find(w => w.target === textoCard);
+                                
+                                if (encontrado && !targetsEnviados.has(encontrado.target)) {
+                                    targetsEnviados.add(encontrado.target);
+                                    registarFalhaNoSheets(encontrado.target, encontrado.native, "Falta de Tempo (Pares)");
+                                }
+                            });
+                        }
+                    }
+                    
+                    alert("Tempo!"); 
+                    app.toMenu(); 
+                }
             }, 100);
         },
 
