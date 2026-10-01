@@ -1,6 +1,6 @@
 # Polyglot Master
 
-Aplicação web de prática de idiomas criada para estudar italiano, mandarim e inglês através de exercícios curtos e interactivos.
+Aplicação web de prática de idiomas criada para estudar italiano, mandarim e inglês através de exercícios curtos e interativos.
 
 ## Funcionalidades
 
@@ -29,7 +29,7 @@ Quando a integração Google Sheets está activa, a aplicação envia para o App
 
 ## Vocabulário
 
-Os conjuntos de palavras e frases estão no objecto `DB`, dentro de `index.html`. Cada entrada pode incluir o termo no idioma de estudo, a pronúncia (opcional) e a tradução em português.
+Os conjuntos de palavras e frases estão no objeto `DB`, dentro de `index.html`. Cada entrada pode incluir o termo no idioma de estudo, a pronúncia (opcional) e a tradução em português.
 
 ## Tecnologias
 
