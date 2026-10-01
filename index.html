@@ -1,10 +1,11 @@
 <html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#58cc02">
-    <title>Polyglot Master Ultimate</title>
+    <title>Polyglot Master — prática de idiomas</title>
+    <meta name="description" content="Jogo de aprendizagem para praticar italiano, mandarim e inglês com exercícios interactivos.">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/10605/10605960.png">
     <style>
         :root {
@@ -51,6 +52,8 @@
         /* --- SCREENS --- */
         .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 50; display: flex; flex-direction: column; align-items: center; padding: 20px; overflow-y: auto; transition: 0.3s; }
         .hidden { display: none !important; }
+        .lang-btn:focus-visible, .mode-btn:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+        .mode-btn { font: inherit; color: inherit; }
         .center-content { justify-content: center; }
 
         /* --- AUTH --- */
@@ -3867,16 +3870,46 @@
         currentList: [],
         
         init: function() {
-            const lastUser = localStorage.getItem('polyglot_last_user');
-            if(lastUser) document.getElementById('username').value = lastUser;
+            document.querySelectorAll('.lang-btn, .mode-btn').forEach(control => {
+                control.setAttribute('role', 'button');
+                control.setAttribute('tabindex', '0');
+                control.addEventListener('keydown', event => {
+                    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); control.click(); }
+                });
+            });
+            try {
+                const lastUser = localStorage.getItem('polyglot_last_user');
+                if (lastUser) document.getElementById('username').value = lastUser;
+            } catch (error) {
+                console.warn('O armazenamento local não está disponível.', error);
+            }
         },
 
         login: function() {
             const name = document.getElementById('username').value.trim();
             if(!name) return alert("Escreve um nome!");
             this.user.name = name;
-            const saved = localStorage.getItem('polyglot_user_' + name);
-            if(saved) this.user = JSON.parse(saved);
+            try {
+                const saved = localStorage.getItem('polyglot_user_' + name);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed && typeof parsed === 'object') {
+                        this.user = {
+                            ...this.user,
+                            ...parsed,
+                            name: typeof parsed.name === 'string' ? parsed.name : name,
+                            it: { ...this.user.it, ...(parsed.it || {}) },
+                            zh: { ...this.user.zh, ...(parsed.zh || {}) },
+                            en: { ...this.user.en, ...(parsed.en || {}) },
+                            isPro: parsed.isPro === true
+                        };
+                    }
+                }
+            } catch (error) {
+                console.warn('Não foi possível carregar o perfil guardado.', error);
+                alert('Não foi possível ler o perfil guardado. Será iniciado um perfil novo.');
+                this.user = { name, it: { xp:0, hearts:5 }, zh: { xp:0, hearts:5 }, en: { xp:0, hearts:5 }, isPro: false };
+            }
             document.getElementById('auth-screen').classList.add('hidden');
             document.getElementById('menu-screen').classList.remove('hidden');
             document.getElementById('user-display').innerText = this.user.name;
@@ -3884,7 +3917,14 @@
         },
 
         logout: function() { this.save(); location.reload(); },
-        save: function() { localStorage.setItem('polyglot_user_' + this.user.name, JSON.stringify(this.user)); localStorage.setItem('polyglot_last_user', this.user.name); },
+        save: function() {
+            try {
+                localStorage.setItem('polyglot_user_' + this.user.name, JSON.stringify(this.user));
+                localStorage.setItem('polyglot_last_user', this.user.name);
+            } catch (error) {
+                console.warn('Não foi possível guardar o progresso.', error);
+            }
+        },
 
         togglePro: function() {
             this.user.isPro = !this.user.isPro;
@@ -3968,9 +4008,10 @@
 
     /* --- 4. GAME LOGIC --- */
     const game = {
-        sessionScore: 0, timer: null, data: [],
+        sessionScore: 0, timer: null, data: [], recognition: null,
         
         start: function(mode) {
+            if (!Array.isArray(app.currentList) || app.currentList.length === 0) return alert("Esta lista ainda não tem vocabulário.");
             if(!app.user.isPro && app.user[app.lang].hearts <= 0) return alert("Sem vidas! ❤️");
             this.sessionScore = 0;
             app.updateUI();
@@ -4405,6 +4446,7 @@
             if (!SpeechRecognition) return alert("O seu navegador não suporta reconhecimento de voz.");
             
             const rec = new SpeechRecognition();
+            this.recognition = rec;
             rec.lang = app.lang === 'it' ? 'it-IT' : (app.lang === 'zh' ? 'zh-CN' : 'en-GB');
             const btn = document.getElementById('mic-btn');
             const feed = document.getElementById('sp-feed');
@@ -4430,6 +4472,7 @@
                 btn.style.background = "var(--green)"; 
                 feed.innerText = "Erro ao ouvir. Tente novamente."; 
             };
+            rec.onend = () => { btn.style.background = "var(--green)"; };
         },
 
         /* FLASHCARDS */
@@ -4585,25 +4628,37 @@
                 window.speechSynthesis.speak(u);
             }
         },
+        audioContext: null,
+        confettiFrame: null,
         sfx: function(type) {
-            const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+            const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContextClass) return;
+            if (!this.audioContext) this.audioContext = new AudioContextClass();
+            const audioCtx = this.audioContext;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
             const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+            const duration = type === 'flip' ? 0.1 : 0.3;
             o.connect(g); g.connect(audioCtx.destination);
-            if(type==='win') { o.frequency.value=600; g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.3); }
-            else if(type==='flip') { o.type='triangle'; o.frequency.value=400; g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.1); }
-            else { o.type='sawtooth'; o.frequency.value=150; g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime+0.3); }
-            o.start(); o.stop(audioCtx.currentTime+0.3);
+            if(type==='win') { o.frequency.value=600; }
+            else if(type==='flip') { o.type='triangle'; o.frequency.value=400; }
+            else { o.type='sawtooth'; o.frequency.value=150; }
+            g.gain.setValueAtTime(1, audioCtx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            o.start(); o.stop(audioCtx.currentTime + duration);
         },
         fireConfetti: function() {
             const c = document.getElementById('confetti-canvas'); const x = c.getContext('2d');
+            if (this.confettiFrame) cancelAnimationFrame(this.confettiFrame);
             c.width = window.innerWidth; c.height = window.innerHeight;
             const p = Array.from({length:100}, () => ({x:Math.random()*c.width, y:-Math.random()*c.height, color:`hsl(${Math.random()*360},100%,50%)`, speed:Math.random()*5+2}));
-            function draw() {
+            const startedAt = performance.now();
+            const draw = (now) => {
                 x.clearRect(0,0,c.width,c.height);
                 p.forEach(i => { i.y+=i.speed; x.fillStyle=i.color; x.fillRect(i.x,i.y,6,6); });
-                requestAnimationFrame(draw);
-            }
-            draw();
+                if (now - startedAt < 2600) this.confettiFrame = requestAnimationFrame(draw);
+                else { x.clearRect(0,0,c.width,c.height); this.confettiFrame = null; }
+            };
+            this.confettiFrame = requestAnimationFrame(draw);
         }
     };
 
